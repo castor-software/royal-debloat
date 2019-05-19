@@ -1,0 +1,28 @@
+language: java
+
+os: linux
+
+dist: trusty
+
+jdk: openjdk8
+
+before_cache: rm -rf $HOME/.m2/se/kth/
+
+cache:
+  directories:
+    - $HOME/.m2
+
+before_install:
+  - jdk_switcher use openjdk8
+  - java -version
+
+install: true
+
+script:
+  - cd jdbl-pom/ && mvn clean install
+  - cd jdbl-tracer/ && mvn clean install
+
+after_success:
+  - mvn clean test jacoco:report coveralls:report
+
+
