@@ -1,5 +1,7 @@
 language: java
 
+sudo: true
+
 os: linux
 
 dist: trusty
@@ -13,16 +15,20 @@ cache:
     - $HOME/.m2
 
 before_install:
+  - sudo apt-get update
   - jdk_switcher use openjdk8
   - java -version
 
 install: true
 
 script:
-  - cd jdbl-pom/ && mvn clean install
-  - cd jdbl-tracer/ && mvn clean install
+  - cd jdbl-pom
+  - mvn clean install -Ptravis
+  - mvn jacoco:report coveralls:report --fail-never
+  - cd ..
+  - cd jdbl-tracer
+  - mvn clean install -Ptravis
+  - mvn jacoco:report coveralls:report --fail-never
 
 after_success:
   - mvn clean test jacoco:report coveralls:report
-
-
