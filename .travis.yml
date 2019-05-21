@@ -8,6 +8,13 @@ dist: trusty
 
 jdk: openjdk8
 
+env:
+  global:
+    - M2_HOME="/usr/local/maven"
+  matrix:
+    - SCRIPT=travis-jdbl-pom.sh
+    - SCRIPT=travis-jdbl-tracer.sh
+
 before_cache: rm -rf $HOME/.m2/se/kth/
 
 cache:
@@ -21,14 +28,7 @@ before_install:
 
 install: true
 
-script:
-  - cd jdbl-pom
-  - mvn clean install -Ptravis
-  - mvn jacoco:report coveralls:report --fail-never
-  - cd ..
-  - cd jdbl-tracer
-  - mvn clean install -Ptravis
-  - mvn jacoco:report coveralls:report --fail-never
+script: ./.travis/$SCRIPT
 
 after_success:
   - mvn clean test jacoco:report coveralls:report
