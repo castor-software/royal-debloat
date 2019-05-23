@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.org/castor-software/royal-debloat.svg?branch=master)](https://travis-ci.org/castor-software/royal-debloat)
-[![Coverage Status](https://coveralls.io/repos/github/castor-software/royal-debloat/badge.svg?branch=master)](https://coveralls.io/github/castor-software/royal-debloat?branch=master)
-# Royal Debloat 
+# Royal Debloat  [![Build Status](https://travis-ci.org/castor-software/royal-debloat.svg?branch=master)](https://travis-ci.org/castor-software/royal-debloat)
 
 This repo contains software debloating tools invented at KTH Royal Institute of Technology. Every tool is organized in a separate folder in this repo, with a detailed README file inside.
 
