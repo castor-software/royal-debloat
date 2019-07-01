@@ -22,4 +22,8 @@ public class BagClass {
 
         System.out.println("Set of unique values from the bag: " + bag.uniqueSet());
     }
+
+    public static void main(String[] args) {
+        new BagClass().main();
+    }
 }

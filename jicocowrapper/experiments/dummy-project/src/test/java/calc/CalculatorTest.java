@@ -7,15 +7,15 @@ import static org.junit.Assert.assertEquals;
 
 public class CalculatorTest {
 
-    CalculatorInt calculatorInt;
+    CalculatorInt calculator;
 
     @Before
     public void setUp() throws Exception {
-        calculatorInt = new Calculator(2, 3);
+        calculator = new Calculator(2, 3);
     }
 
     @Test
     public void testSum() {
-        assertEquals(5, calculatorInt.sum());
+        assertEquals(5, calculator.sum());
     }
 }
