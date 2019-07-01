@@ -35,13 +35,18 @@ public class MethodDebloater {
 
             public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
 
-                System.out.println("Visiting method:  " + name + signature);
+                MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
 
-                if (usedMethods.contains(name + signature)) {
-                    System.out.println("Removed unused method: " + name + " in class " + clazz);
-                    return null;
+                if (usedMethods.contains(name + desc)) {
+
+                    System.out.println("Removed unused method: " + name + desc + " in class ==> " + clazz);
+                    MethodThrowerException methodThrowerException = new MethodThrowerException(mv);
+                    return methodThrowerException;
+
+//                    return null;
                 }
-                return super.visitMethod(access, name, desc, signature, exceptions);
+                return mv;
+//                return super.visitMethod(access, name, desc, signature, exceptions);
             }
 
         };
@@ -52,4 +57,5 @@ public class MethodDebloater {
         fos.write(code);
         fos.close();
     }
+
 }

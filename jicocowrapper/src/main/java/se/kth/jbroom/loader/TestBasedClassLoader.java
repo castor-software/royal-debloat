@@ -53,7 +53,7 @@ public class TestBasedClassLoader extends ClassLoader {
     public URL getResource(String name) {
         System.out.println("[TestBasedClassLoader] getting resource: " + name);
         try {
-            URL resource = new File(classDir + "/" + name).toPath().toUri().toURL();
+            URL resource = new File(classDir + "/resources/" + name).toPath().toUri().toURL();
             System.out.println("Path to the resource: " + resource.getPath());
             return getParent().getResource(name);
 //            return resource;

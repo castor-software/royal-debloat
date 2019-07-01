@@ -61,15 +61,15 @@ public class JacocoWrapper {
         if (properties != null)
             request.setProperties(properties);
         request.setGoals(goals);
-        request.getOutputHandler(s -> System.out.println(s));
-        request.getErrorHandler(s -> System.out.println(s));
+//        request.getOutputHandler(s -> System.out.println(s));
+//        request.getErrorHandler(s -> System.out.println(s));
         request.setTimeoutInSeconds(testExecutionTimeOut);
 
         Invoker invoker = new DefaultInvoker();
         invoker.setMavenHome(mavenHome);
         invoker.setWorkingDirectory(workingDir);
-        invoker.setErrorHandler(s -> System.out.println(s));
-        invoker.setOutputHandler(s -> System.out.println(s));
+//        invoker.setErrorHandler(s -> System.out.println(s));
+//        invoker.setOutputHandler(s -> System.out.println(s));
         try {
             InvocationResult result = invoker.execute(request);
             return result.getExitCode() == 0;
@@ -77,5 +77,8 @@ public class JacocoWrapper {
             return false;
         }
     }
+
+
+
 
 }

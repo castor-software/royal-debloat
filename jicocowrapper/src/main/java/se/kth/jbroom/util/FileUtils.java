@@ -105,9 +105,9 @@ public class FileUtils {
                         .substring(outputDirectory.length() + 1, classFilePath.length() - 6);
 
                 // check if we can remove the class safely
-                if(classesUsed.contains(currentClassName)){
-                    System.out.println("is contained");
-                }
+//                if(classesUsed.contains(currentClassName)){
+//                    System.out.println("is contained");
+//                }
 
                 if (!classesUsed.contains(currentClassName) && isRemovable(currentClassName.replace("/", ".")) && !exclusionSet.contains(currentClassName)) {
                     // get the current directory

@@ -50,37 +50,18 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
         // get the list of classes loaded
         // java -verbose:class -jar target/clitools-1.0.0-SNAPSHOT-jar-with-dependencies.jar whoami | grep "\[Loaded " | grep -v " from /usr/lib" | cut -d ' ' -f2 | sort > loaded-classes
 
-        Properties pro = new Properties();
-        pro.setProperty("outputDirectory", outputDirectory);
-        pro.setProperty("includeScope", "compile");
+        // copy the dependencies
+        Properties copyDependenciesProperties = new Properties();
+        copyDependenciesProperties.setProperty("outputDirectory", outputDirectory);
+        copyDependenciesProperties.setProperty("includeScope", "compile");
+        runMaven(Collections.singletonList("dependency:copy-dependencies"), copyDependenciesProperties, project.getBasedir());
 
-        runMaven(Collections.singletonList("dependency:copy-dependencies"), pro, project.getBasedir());
+        // copy the resources
+        Properties copyResourcesProperties = new Properties();
+        copyResourcesProperties.setProperty("outputDirectory", outputDirectory + "/resources");
+        runMaven(Collections.singletonList("resources:resources"), copyResourcesProperties, project.getBasedir());
 
         JarUtils.decompressJars(outputDirectory);
-
-        /***************************************************************************/
-
-        JacocoWrapper jacocoWrapper = new JacocoWrapper(project.getBasedir(), new File(project.getBasedir().getAbsolutePath() + "/report.xml"));
-        Map<String, Set<String>> usageAnalysis = null;
-
-        // run the usage analysis
-        try {
-            usageAnalysis = jacocoWrapper.analyzeUsages();
-            // print some results
-            System.out.println("#unused classes: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() == null).count());
-            System.out.println("#unused methods: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() != null).map(e -> e.getValue()).mapToInt(s -> s.size()).sum());
-        } catch (IOException | ParserConfigurationException | SAXException e) {
-            e.printStackTrace();
-        }
-
-        Set<String> classesUsed = new HashSet<>();
-
-        for (Map.Entry<String, Set<String>> entry : usageAnalysis.entrySet()) {
-            if (entry.getValue() != null) {
-                classesUsed.add(entry.getKey());
-                System.out.println(entry.getKey() + " = " + entry.getValue());
-            }
-        }
 
         /****************************************************************************************/
 
@@ -98,7 +79,8 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
 
             ArrayList<String> testsFiles = findTestFiles(testOutputDirectory);
 
-            System.out.println("Number of test classes: " + testsFiles.size());
+            getLog().info("Running JUnit tests");
+            getLog().info("Number of test classes: " + testsFiles.size());
 
             // TODO improve this by calling the maven surefire plugin directly instead of running the tests one by one
             // Execute all the test files
@@ -112,76 +94,69 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
             }
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException |
                 ClassNotFoundException e) {
-            System.out.println("Error: " + e);
+            getLog().error("Error: " + e);
         }
 
         Set<String> classesLoaded = new HashSet<>();
 
         while (cl != null) {
-            System.out.println("ClassLoader: " + cl);
+            getLog().info("ClassLoader: " + cl);
             try {
                 for (Iterator iter = list(cl); iter.hasNext(); ) {
                     String classLoaded = iter.next().toString();
                     classesLoaded.add(classLoaded.split(" ")[1]);
-                    System.out.println("\t" + classLoaded);
+
+                    if (cl.toString().startsWith("se.kth.jbroom.loader")) {
+                        getLog().info("\t" + classLoaded);
+                    }
+
                 }
             } catch (NoSuchFieldException | IllegalAccessException e) {
-                e.printStackTrace();
+                getLog().error("Error: " + e);
             }
             cl = cl.getParent();
+        }
+
+
+        /***************************************************************************/
+
+        JacocoWrapper jacocoWrapper = new JacocoWrapper(project.getBasedir(), new File(project.getBasedir().getAbsolutePath() + "/report.xml"));
+        Map<String, Set<String>> usageAnalysis = null;
+
+        // run the usage analysis
+        try {
+            usageAnalysis = jacocoWrapper.analyzeUsages();
+            // print some results
+            getLog().info("#unused classes: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() == null).count());
+            getLog().info("#unused methods: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() != null).map(e -> e.getValue()).mapToInt(s -> s.size()).sum());
+        } catch (IOException | ParserConfigurationException | SAXException e) {
+            e.printStackTrace();
+        }
+
+        Set<String> classesUsed = new HashSet<>();
+
+        for (Map.Entry<String, Set<String>> entry : usageAnalysis.entrySet()) {
+            if (entry.getValue() != null) {
+                classesUsed.add(entry.getKey());
+                getLog().info(entry.getKey() + " = " + entry.getValue() + "\n");
+            }
         }
 
         FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<String>(), classesLoaded);
         try {
             fileUtils.deleteUnusedClasses(outputDirectory);
         } catch (IOException e) {
-            e.printStackTrace();
+            getLog().error("Error: " + e);
         }
-
-       /* List<String> cmdList;
-        try {
-            Arrays.asList("java", "-verbose:class");
-
-            cmdList = new ArrayList();
-            cmdList.add("C:\\Program Files\\Java\\jdk1.8.0_111\\bin\\javap.exe");
-            cmdList.add("-c");
-            cmdList.add("D:\\First.class");
-
-            // Constructing ProcessBuilder with List as argument
-            ProcessBuilder pb = new ProcessBuilder(cmdList);
-
-            Process p = pb.start();
-            p.waitFor();
-            InputStream fis = p.getInputStream();
-
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }*/
 
         MethodDebloater methodDebloater = new MethodDebloater(outputDirectory, usageAnalysis);
         try {
             methodDebloater.removeUnusedMethods();
         } catch (IOException e) {
-            e.printStackTrace();
+            getLog().error("Error: " + e);
         }
 
-        System.out.println("Classes used: " + classesUsed.size() + ", " + "Classes unused: " + fileUtils.getNbClassesRemoved() + ", " + "Total: " + classesUsed.size() + fileUtils.getNbClassesRemoved());
-
-//
-//        // Logs to standard output
-//        System.out.println("Number of classes instrumented: " + "x");
-//        System.out.println("Number of classes removed: " + "x");
-//        System.out.println("Number of methods removed: " + "X");
-//
-//        // Delete the classesUsed directory
-//        FileUtils.renameFolder(inputDirectory, inputDirectory + "-original");
-//
-//        // Rename the classesUsed-debloated directory to classesUsed
-//        FileUtils.renameFolder(inputDirectory + DEBLOATED_SUFFIX, inputDirectory);
+        getLog().info("Classes used: " + classesUsed.size() + ", " + "Classes unused: " + fileUtils.getNbClassesRemoved() + ", " + "Total: " + classesUsed.size() + fileUtils.getNbClassesRemoved());
 
         getLog().info("DEBLOAT FROM TESTS SUCCESS");
     }
@@ -243,4 +218,28 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
             return false;
         }
     }
+
+    /* List<String> cmdList;
+        try {
+            Arrays.asList("java", "-verbose:class");
+
+            cmdList = new ArrayList();
+            cmdList.add("C:\\Program Files\\Java\\jdk1.8.0_111\\bin\\javap.exe");
+            cmdList.add("-c");
+            cmdList.add("D:\\First.class");
+
+            // Constructing ProcessBuilder with List as argument
+            ProcessBuilder pb = new ProcessBuilder(cmdList);
+
+            Process p = pb.start();
+            p.waitFor();
+            InputStream fis = p.getInputStream();
+
+        } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }*/
 }
