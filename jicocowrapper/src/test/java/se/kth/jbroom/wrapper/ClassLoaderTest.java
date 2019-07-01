@@ -1,7 +1,7 @@
 package se.kth.jbroom.wrapper;
 
 import se.kth.jbroom.loader.TestBasedClassLoader;
-import se.kth.jbroom.mojo.TestBasedDebloaterMojo;
+import se.kth.jbroom.TestBasedDebloaterMojo;
 import se.kth.jbroom.util.JarUtils;
 
 import java.io.File;

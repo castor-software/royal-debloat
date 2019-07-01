@@ -3,6 +3,7 @@ package se.kth.jbroom.debloat;
 import org.junit.Before;
 import org.xml.sax.SAXException;
 import se.kth.jbroom.util.JarUtils;
+import se.kth.jbroom.wrapper.InvocationType;
 import se.kth.jbroom.wrapper.JacocoWrapper;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -24,7 +25,7 @@ public class MethodDebloaterTest {
     }
 
     public void removeUnusedMethods() {
-        JacocoWrapper jacocoWrapper = new JacocoWrapper(baseDir, new File(baseDir.getAbsolutePath() + "/report.xml"));
+        JacocoWrapper jacocoWrapper = new JacocoWrapper(baseDir, new File(baseDir.getAbsolutePath() + "/report.xml"), InvocationType.TEST);
         Map<String, Set<String>> usageAnalysis = null;
 
         // run the usage analysis

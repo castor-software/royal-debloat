@@ -1,16 +1,18 @@
-package se.kth.jbroom.mojo;
+package se.kth.jbroom;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.apache.maven.shared.invoker.*;
 import org.xml.sax.SAXException;
 import se.kth.jbroom.debloat.MethodDebloater;
+import se.kth.jbroom.loader.LoaderCollector;
 import se.kth.jbroom.loader.TestBasedClassLoader;
 import se.kth.jbroom.util.FileUtils;
 import se.kth.jbroom.util.JarUtils;
+import se.kth.jbroom.util.MavenUtils;
+import se.kth.jbroom.wrapper.InvocationType;
 import se.kth.jbroom.wrapper.JacocoWrapper;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -34,9 +36,6 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
 
     private File mavenHome = new File("/usr/share/maven");
 
-    private static final String INSTRUMENTED_SUFFIX = "-instrumented";
-    private static final String DEBLOATED_SUFFIX = "-debloated";
-
     @Parameter(defaultValue = "${project}", readonly = true)
     private MavenProject project;
 
@@ -45,21 +44,24 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
 
         String testOutputDirectory = project.getBuild().getTestOutputDirectory();
         String outputDirectory = project.getBuild().getOutputDirectory();
+        File baseDir = project.getBasedir();
 
-        getLog().info("***** DEBLOAT FROM TEST COVERAGE STARTED *****");
+        getLog().info("***** STARTING DEBLOAT FROM TEST COVERAGE *****");
         // get the list of classes loaded
         // java -verbose:class -jar target/clitools-1.0.0-SNAPSHOT-jar-with-dependencies.jar whoami | grep "\[Loaded " | grep -v " from /usr/lib" | cut -d ' ' -f2 | sort > loaded-classes
+
+        MavenUtils mavenUtils = new MavenUtils(mavenHome, baseDir);
 
         // copy the dependencies
         Properties copyDependenciesProperties = new Properties();
         copyDependenciesProperties.setProperty("outputDirectory", outputDirectory);
         copyDependenciesProperties.setProperty("includeScope", "compile");
-        runMaven(Collections.singletonList("dependency:copy-dependencies"), copyDependenciesProperties, project.getBasedir());
+        mavenUtils.runMaven(Collections.singletonList("dependency:copy-dependencies"), copyDependenciesProperties);
 
         // copy the resources
         Properties copyResourcesProperties = new Properties();
         copyResourcesProperties.setProperty("outputDirectory", outputDirectory + "/resources");
-        runMaven(Collections.singletonList("resources:resources"), copyResourcesProperties, project.getBasedir());
+        mavenUtils.runMaven(Collections.singletonList("resources:resources"), copyResourcesProperties);
 
         JarUtils.decompressJars(outputDirectory);
 
@@ -102,7 +104,7 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
         while (cl != null) {
             getLog().info("ClassLoader: " + cl);
             try {
-                for (Iterator iter = list(cl); iter.hasNext(); ) {
+                for (Iterator iter = LoaderCollector.list(cl); iter.hasNext(); ) {
                     String classLoaded = iter.next().toString();
                     classesLoaded.add(classLoaded.split(" ")[1]);
 
@@ -117,10 +119,9 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
             cl = cl.getParent();
         }
 
-
         /***************************************************************************/
 
-        JacocoWrapper jacocoWrapper = new JacocoWrapper(project.getBasedir(), new File(project.getBasedir().getAbsolutePath() + "/report.xml"));
+        JacocoWrapper jacocoWrapper = new JacocoWrapper(project.getBasedir(), new File(project.getBasedir().getAbsolutePath() + "/report.xml"), InvocationType.TEST);
         Map<String, Set<String>> usageAnalysis = null;
 
         // run the usage analysis
@@ -161,18 +162,6 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
         getLog().info("DEBLOAT FROM TESTS SUCCESS");
     }
 
-    private Iterator list(ClassLoader classLoader) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-        Class CL_class = classLoader.getClass();
-        while (CL_class != java.lang.ClassLoader.class) {
-            CL_class = CL_class.getSuperclass();
-        }
-        java.lang.reflect.Field ClassLoader_classes_field = CL_class
-                .getDeclaredField("classes");
-        ClassLoader_classes_field.setAccessible(true);
-        Vector classes = (Vector) ClassLoader_classes_field.get(classLoader);
-        return classes.iterator();
-    }
-
     /**
      * Recursively search class files in a directory.
      *
@@ -195,31 +184,7 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
         return tests;
     }
 
-    private boolean runMaven(List<String> goals, Properties properties, File workingDir) {
-        File pomFile = new File(workingDir, "pom.xml");
-        InvocationRequest request = new DefaultInvocationRequest();
-        request.setBatchMode(true);
-        request.setPomFile(pomFile);
-        if (properties != null)
-            request.setProperties(properties);
-        request.setGoals(goals);
-        request.getOutputHandler(s -> System.out.println(s));
-        request.getErrorHandler(s -> System.out.println(s));
-
-        Invoker invoker = new DefaultInvoker();
-        invoker.setMavenHome(mavenHome);
-        invoker.setWorkingDirectory(workingDir);
-        invoker.setErrorHandler(s -> System.out.println(s));
-        invoker.setOutputHandler(s -> System.out.println(s));
-        try {
-            InvocationResult result = invoker.execute(request);
-            return result.getExitCode() == 0;
-        } catch (MavenInvocationException e) {
-            return false;
-        }
-    }
-
-    /* List<String> cmdList;
+       /* List<String> cmdList;
         try {
             Arrays.asList("java", "-verbose:class");
 
