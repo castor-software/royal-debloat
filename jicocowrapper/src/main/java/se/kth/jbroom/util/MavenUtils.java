@@ -3,6 +3,7 @@ package se.kth.jbroom.util;
 import org.apache.maven.shared.invoker.*;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -17,7 +18,20 @@ public class MavenUtils {
         this.workingDir = workingDir;
     }
 
-    public boolean runMaven(List<String> goals, Properties properties) {
+    public void copyDependencies(String outputDirectory) {
+        Properties copyDependenciesProperties = new Properties();
+        copyDependenciesProperties.setProperty("outputDirectory", outputDirectory);
+        copyDependenciesProperties.setProperty("includeScope", "compile");
+        runMaven(Collections.singletonList("dependency:copy-dependencies"), copyDependenciesProperties);
+    }
+
+    public void copyResources(String outputDirectory) {
+        Properties copyResourcesProperties = new Properties();
+        copyResourcesProperties.setProperty("outputDirectory", outputDirectory + "/resources");
+        runMaven(Collections.singletonList("resources:resources"), copyResourcesProperties);
+    }
+
+    private boolean runMaven(List<String> goals, Properties properties) {
         File pomFile = new File(workingDir, "pom.xml");
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);

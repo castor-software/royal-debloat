@@ -9,7 +9,7 @@ import java.util.Set;
 public class MethodDebloater {
 
     private String outputDirectory;
-    Map<String, Set<String>> usageAnalysis;
+    private Map<String, Set<String>> usageAnalysis;
 
     public MethodDebloater(String outputDirectory, Map<String, Set<String>> usageAnalysis) {
         this.outputDirectory = outputDirectory;
@@ -57,5 +57,4 @@ public class MethodDebloater {
         fos.write(code);
         fos.close();
     }
-
 }

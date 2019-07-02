@@ -11,7 +11,6 @@ public class MethodInvoker {
     public static void invokeMethod(ClassLoader cl, String entryClass, String entryMethod, String entryParameters) {
 
         try {
-//            ClassLoader cl = Thread.currentThread().getContextClassLoader();
             System.out.println("Entry class: " + entryClass);
             Class entryClassLoaded = cl.loadClass(entryClass);
             System.out.println("Entry class loaded: " + entryClassLoaded.getName());

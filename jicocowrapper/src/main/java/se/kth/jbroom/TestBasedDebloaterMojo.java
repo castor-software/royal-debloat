@@ -23,11 +23,9 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
- * <p>
  * This Mojo instruments the project according to the coverage of its test suite.
  * Probes are inserted in order to keep track of the classes and methods used.
  * Non covered elements are removed from the final jar file.
- * </p>
  */
 @Mojo(name = "test-based-debloat", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, threadSafe = true)
 public class TestBasedDebloaterMojo extends AbstractMojo {
@@ -47,22 +45,16 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
         File baseDir = project.getBasedir();
 
         getLog().info("***** STARTING DEBLOAT FROM TEST COVERAGE *****");
-        // get the list of classes loaded
-        // java -verbose:class -jar target/clitools-1.0.0-SNAPSHOT-jar-with-dependencies.jar whoami | grep "\[Loaded " | grep -v " from /usr/lib" | cut -d ' ' -f2 | sort > loaded-classes
 
         MavenUtils mavenUtils = new MavenUtils(mavenHome, baseDir);
 
         // copy the dependencies
-        Properties copyDependenciesProperties = new Properties();
-        copyDependenciesProperties.setProperty("outputDirectory", outputDirectory);
-        copyDependenciesProperties.setProperty("includeScope", "compile");
-        mavenUtils.runMaven(Collections.singletonList("dependency:copy-dependencies"), copyDependenciesProperties);
+        mavenUtils.copyDependencies(outputDirectory);
 
         // copy the resources
-        Properties copyResourcesProperties = new Properties();
-        copyResourcesProperties.setProperty("outputDirectory", outputDirectory + "/resources");
-        mavenUtils.runMaven(Collections.singletonList("resources:resources"), copyResourcesProperties);
+        mavenUtils.copyResources(outputDirectory);
 
+        // decompress the copied dependencies
         JarUtils.decompressJars(outputDirectory);
 
         /****************************************************************************************/
@@ -183,28 +175,4 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
         }
         return tests;
     }
-
-       /* List<String> cmdList;
-        try {
-            Arrays.asList("java", "-verbose:class");
-
-            cmdList = new ArrayList();
-            cmdList.add("C:\\Program Files\\Java\\jdk1.8.0_111\\bin\\javap.exe");
-            cmdList.add("-c");
-            cmdList.add("D:\\First.class");
-
-            // Constructing ProcessBuilder with List as argument
-            ProcessBuilder pb = new ProcessBuilder(cmdList);
-
-            Process p = pb.start();
-            p.waitFor();
-            InputStream fis = p.getInputStream();
-
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }*/
 }
