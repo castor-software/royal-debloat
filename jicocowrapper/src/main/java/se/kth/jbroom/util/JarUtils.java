@@ -7,8 +7,11 @@ import java.io.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
-
 public class JarUtils {
+
+    //--------------------------------/
+    //-------- CLASS FIELD/S --------/
+    //------------------------------/
 
     private static final Logger LOGGER = LogManager.getLogger(JarUtils.class.getName());
 
@@ -17,13 +20,19 @@ public class JarUtils {
      */
     private static final int BUFFER_SIZE = 16384;
 
+    //--------------------------------/
+    //-------- CONSTRUCTOR/S --------/
+    //------------------------------/
+
     private JarUtils() {
     }
 
+    //--------------------------------/
+    //------- PUBLIC METHOD/S -------/
+    //------------------------------/
+
     /**
      * Decompress all jar files located in a given directory.
-     *
-     * @param outputDirectory The path to the output directory
      */
     public static void decompressJars(String outputDirectory) {
         File files = new File(outputDirectory);
@@ -41,14 +50,14 @@ public class JarUtils {
         }
     }
 
+    //--------------------------------/
+    //------ PRIVATE METHOD/S -------/
+    //------------------------------/
+
     /**
      * Decompress a jar file in a path to a directory (will be created if it doesn't exists).
-     *
-     * @param jarFilePath
-     * @param destDirectory
-     * @throws IOException
      */
-    public static void decompressJarFile(String jarFilePath, String destDirectory) throws IOException {
+    private static void decompressJarFile(String jarFilePath, String destDirectory) throws IOException {
         File destDir = new File(destDirectory);
         if (!destDir.exists()) {
             destDir.mkdir();
@@ -77,10 +86,6 @@ public class JarUtils {
 
     /**
      * Extract an entry file.
-     *
-     * @param jarIn
-     * @param filePath
-     * @throws IOException
      */
     private static void extractFile(JarInputStream jarIn, String filePath) throws IOException {
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));

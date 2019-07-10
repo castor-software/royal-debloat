@@ -163,6 +163,7 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
     private ArrayList<String> findTestFiles(String testOutputDirectory) {
         File f = new File(testOutputDirectory);
         File[] list = f.listFiles();
+        assert list != null;
         for (File testFile : list) {
             if (testFile.isDirectory()) {
                 findTestFiles(testFile.getAbsolutePath());

@@ -9,6 +9,10 @@ import java.util.stream.Stream;
 
 public class FileUtils {
 
+    //--------------------------------/
+    //-------- CLASS FIELD/S --------/
+    //------------------------------/
+
     /**
      * Counts the number of classes removed.
      */
@@ -29,15 +33,20 @@ public class FileUtils {
      */
     private Set<String> classesUsed;
 
-    /**
-     * Constructor
-     */
+    //--------------------------------/
+    //-------- CONSTRUCTOR/S --------/
+    //------------------------------/
+
     public FileUtils(String outputDirectory, Set<String> exclusionSet, Set<String> classesUsed) {
         this.nbClassesRemoved = 0;
         this.outputDirectory = outputDirectory;
         this.exclusionSet = exclusionSet;
         this.classesUsed = classesUsed;
     }
+
+    //--------------------------------/
+    //------- PUBLIC METHOD/S -------/
+    //------------------------------/
 
     /**
      * Feed the list of non-removable classes.
@@ -136,14 +145,19 @@ public class FileUtils {
         return file.renameTo(new File(newNameFolderPath));
     }
 
-    /**
-     * Deletes a directory recursively.
-     *
-     * @param directory
-     * @throws IOException
-     * @throws IllegalArgumentException
-     */
-    public void deleteDirectory(final File directory) throws IOException {
+    //--------------------------------/
+    //------- GETTER METHOD/S -------/
+    //------------------------------/
+
+    public int getNbClassesRemoved() {
+        return nbClassesRemoved;
+    }
+
+    //--------------------------------/
+    //------ PRIVATE METHOD/S -------/
+    //------------------------------/
+
+    private void deleteDirectory(final File directory) throws IOException {
         if (!directory.exists()) {
             return;
         }
@@ -207,9 +221,5 @@ public class FileUtils {
                 throw new IOException(message);
             }
         }
-    }
-
-    public int getNbClassesRemoved() {
-        return nbClassesRemoved;
     }
 }

@@ -1,6 +1,8 @@
 package se.kth.jbroom.wrapper;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.xml.sax.SAXException;
 import se.kth.jbroom.reflection.MethodInvoker;
 import se.kth.jbroom.util.MavenUtils;
@@ -17,21 +19,26 @@ import java.util.*;
 
 public class JacocoWrapper {
 
-    static File mavenHome = new File("/usr/share/maven");
+    //--------------------------------/
+    //-------- CLASS FIELD/S --------/
+    //------------------------------/
 
+    private static final Logger LOGGER = LogManager.getLogger(JacocoWrapper.class.getName());
+
+    private String entryClass;
+    private String entryMethod;
+    private String entryParameters;
+
+    private File mavenHome;
     private File baseDir;
     private File report;
 
     private InvocationType invocationType;
 
-    private ClassLoader cl;
-    private String entryClass;
-    private String entryMethod;
-    private String entryParameters;
+    //--------------------------------/
+    //-------- CONSTRUCTOR/S --------/
+    //------------------------------/
 
-    /**
-     * Constructor
-     */
     public JacocoWrapper(File baseDir, File report, InvocationType invocationType) {
         this.baseDir = baseDir;
         this.report = report;
@@ -42,18 +49,23 @@ public class JacocoWrapper {
         }
     }
 
-    public JacocoWrapper(File baseDir, File report, InvocationType invocationType, String entryClass, String entryMethod, String entryParameters) {
+    public JacocoWrapper(File baseDir, File report, InvocationType invocationType, String entryClass, String entryMethod, String entryParameters, File mavenHome) {
         this.baseDir = baseDir;
         this.report = report;
         this.invocationType = invocationType;
         this.entryClass = entryClass;
         this.entryMethod = entryMethod;
         this.entryParameters = entryParameters;
+        this.mavenHome = mavenHome;
 
         if (report.exists()) {
             FileUtils.deleteQuietly(report);
         }
     }
+
+    //--------------------------------/
+    //------- PUBLIC METHOD/S -------/
+    //------------------------------/
 
     public Map<String, Set<String>> analyzeUsages() throws IOException, ParserConfigurationException, SAXException {
 
@@ -65,7 +77,6 @@ public class JacocoWrapper {
         pro2.setProperty("mdep.outputFile", baseDir.getAbsolutePath() + "/test-classpath");
         pro2.setProperty("scope", "test");
         mavenUtils.runMaven(Collections.singletonList("dependency:build-classpath"), pro2);
-
 
         Properties pro = new Properties();
         pro.setProperty("outputDirectory", baseDir.getAbsolutePath() + "/target/classes");
@@ -85,9 +96,11 @@ public class JacocoWrapper {
                     URLClassLoader urlClassLoader = createClassLoader(new File(baseDir, "test-classpath"));
                     MethodInvoker.invokeMethod(urlClassLoader, entryClass, entryMethod, entryParameters);
                 } catch (IOException e) {
-                    System.err.println("ERRRRRRRRRRORRRRRRRRRRR");
-                    e.printStackTrace();
+                    LOGGER.error("Unable to invoke methods" + e);
                 }
+                break;
+            case CONSERVATIVE:
+                // TODO implement the conservative approach
                 break;
         }
 
@@ -105,32 +118,27 @@ public class JacocoWrapper {
     }
 
     private URLClassLoader createClassLoader(File in) throws IOException {
-        System.out.println("Absolute: " + in.getAbsolutePath());
-
         BufferedReader buffer = new BufferedReader(new FileReader(in));
-        String rawFile = baseDir.getAbsolutePath() + "/target/classes/:";
-        String line = null;
+        StringBuilder rawFile = new StringBuilder(baseDir.getAbsolutePath() + "/target/classes/:");
+        String line;
         while ((line = buffer.readLine()) != null) {
-            rawFile += line;
+            rawFile.append(line);
         }
-        URL[] urls = Arrays.stream(rawFile.split(":"))
+        URL[] urls = Arrays.stream(rawFile.toString().split(":"))
                 .map(str -> {
                     try {
-                        //System.out.println("add to classpath: " + str);
                         return new URL("file://" + str);
                     } catch (MalformedURLException e) {
-                        System.err.println("failed to add to classpath: " + str);
+                        LOGGER.error("failed to add to classpath: " + str);
                         return null;
                     }
                 })
-                .filter(url -> url != null)
+                .filter(Objects::nonNull)
                 .toArray(URL[]::new);
 
-        for(int i =0; i < urls.length; i++) System.out.println("url: " + urls[i].getPath());
-
-
+        for (URL url : urls) {
+            LOGGER.info("url: " + url.getPath());
+        }
         return new URLClassLoader(urls);
     }
-
-
 }

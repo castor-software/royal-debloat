@@ -5,6 +5,10 @@ import java.lang.reflect.Method;
 
 public class MethodInvoker {
 
+    //--------------------------------/
+    //------- PUBLIC METHOD/S -------/
+    //------------------------------/
+
     /**
      * Invoke method with parameters in a class with a custom {@link ClassLoader}.
      */

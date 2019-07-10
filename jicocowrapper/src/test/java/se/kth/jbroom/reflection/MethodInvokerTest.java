@@ -110,7 +110,8 @@ public class MethodInvokerTest {
                 InvocationType.ENTRY_POINT,
                 entryClass,
                 entryMethod,
-                entryParameters);
+                entryParameters,
+                new File("/usr/share/maven"));
 
         Map<String, Set<String>> usageAnalysis = null;
 

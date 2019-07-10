@@ -2,5 +2,6 @@ package se.kth.jbroom.wrapper;
 
 public enum InvocationType {
     TEST,
-    ENTRY_POINT
+    ENTRY_POINT,
+    CONSERVATIVE
 }

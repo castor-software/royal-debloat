@@ -29,7 +29,11 @@ import java.util.Set;
 @Mojo(name = "entry-point-debloat", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, threadSafe = true)
 public class EntryPointDebloaterMojo extends AbstractMojo {
 
-    private File mavenHome = new File("/usr/share/maven");
+    //--------------------------------/
+    //-------- CLASS FIELD/S --------/
+    //------------------------------/
+
+    private static final File mavenHome = new File("/usr/share/maven");
 
     @Parameter(defaultValue = "${project}", readonly = true)
     private MavenProject project;
@@ -42,6 +46,10 @@ public class EntryPointDebloaterMojo extends AbstractMojo {
 
     @Parameter(property = "entry.parameters", name = "entryParameters", defaultValue = " ")
     private String entryParameters = null;
+
+    //--------------------------------/
+    //------- PUBLIC METHOD/S -------/
+    //------------------------------/
 
     @Override
     public void execute() {
@@ -62,23 +70,22 @@ public class EntryPointDebloaterMojo extends AbstractMojo {
         // decompress the copied dependencies
         JarUtils.decompressJars(outputDirectory);
 
-        /****************************************************************************************/
-
+        // getting the loaded classes
         CmdExec cmdExec = new CmdExec();
         getLog().info("Output directory: " + outputDirectory);
         getLog().info("entryClass: " + entryClass);
         getLog().info("entryParameters: " + entryParameters);
-
         Set<String> classesLoaded = cmdExec.execProcess(outputDirectory, entryClass, entryParameters.split(" "));
 
-        /***************************************************************************/
-
-        JacocoWrapper jacocoWrapper = new JacocoWrapper(project.getBasedir(),
+        // getting the used methods/****************************************************************************************/
+        JacocoWrapper jacocoWrapper = new JacocoWrapper(
+                project.getBasedir(),
                 new File(project.getBasedir().getAbsolutePath() + "/report.xml"),
                 InvocationType.ENTRY_POINT,
                 entryClass,
                 entryMethod,
-                entryParameters);
+                entryParameters,
+                mavenHome);
 
         Map<String, Set<String>> usageAnalysis = null;
 
@@ -87,7 +94,7 @@ public class EntryPointDebloaterMojo extends AbstractMojo {
             usageAnalysis = jacocoWrapper.analyzeUsages();
             // print some results
             getLog().info("#Unused classes: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() == null).count());
-            getLog().info("#Unused methods: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() != null).map(e -> e.getValue()).mapToInt(s -> s.size()).sum());
+            getLog().info("#Unused methods: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() != null).map(Map.Entry::getValue).mapToInt(Set::size).sum());
         } catch (IOException | ParserConfigurationException | SAXException e) {
             getLog().error(e);
         }
@@ -115,7 +122,7 @@ public class EntryPointDebloaterMojo extends AbstractMojo {
             getLog().error("Error: " + e);
         }
 
-        getLog().info("Classes used: " + classesUsed.size() + ", " + "Classes unused: " + fileUtils.getNbClassesRemoved() + ", " + "Total: " + ((classesUsed.size() + fileUtils.getNbClassesRemoved())));
+        getLog().info("Classes used: " + classesUsed.size() + ", " + "Classes unused: " + fileUtils.getNbClassesRemoved() + ", " + "Total: " + (classesUsed.size() + fileUtils.getNbClassesRemoved()));
         getLog().info("***** DEBLOAT FROM FROM ENTRY POINT SUCCESS *****");
     }
 }

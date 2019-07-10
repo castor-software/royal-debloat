@@ -1,6 +1,8 @@
 package se.kth.jbroom.util;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -10,19 +12,27 @@ import java.util.Set;
 
 public class CmdExec {
 
+    //--------------------------------/
+    //-------- CLASS FIELD/S --------/
+    //------------------------------/
+
+    private static final Logger LOGGER = LogManager.getLogger(JarUtils.class.getName());
+
+    //--------------------------------/
+    //------- PUBLIC METHOD/S -------/
+    //------------------------------/
+
     /**
-     * Creates a system process to execute an given Java class with its parameters via command line.
+     * Creates a system process to execute a Java class with its parameters via command line.
      * E.g, java -verbose:class -jar target/clitools-1.0.0-SNAPSHOT-jar-with-dependencies.jar whoami | grep "\[Loaded " | grep -v " from /usr/lib" | cut -d ' ' -f2 | sort > loaded-classes
      *
-     * @param classPath
-     * @param clazzFullyQualifiedName
-     * @param parameters
-     * @return the set of classes in the classpath that were loaded
+     * @param classPath               Path to the .class file
+     * @param clazzFullyQualifiedName Fully qualified name of the class to execute
+     * @param parameters              The parameters (i.e, -verbose:class)
+     * @return The set of classes in the classpath that were loaded during the execution of the class
      */
     public Set<String> execProcess(String classPath, String clazzFullyQualifiedName, String[] parameters) {
-
         Set<String> result = new HashSet<>();
-
         try {
             String line;
             String[] cmd = {"java",
@@ -33,9 +43,9 @@ public class CmdExec {
 
             cmd = ArrayUtils.addAll(cmd, parameters);
 
-            System.out.print("Executing command: ");
-            Arrays.asList(cmd).stream().forEach(s -> System.out.print(s + " "));
-            System.out.println("\n");
+            LOGGER.info("Executing command: ");
+            Arrays.stream(cmd).forEach(s -> LOGGER.info(s + " "));
+            LOGGER.info("\n");
 
             Process p = Runtime.getRuntime().exec(cmd);
 
@@ -47,11 +57,9 @@ public class CmdExec {
             }
             input.close();
         } catch (Exception e) {
-            System.err.println(e);
+            LOGGER.error(e);
         }
-
-        result.stream().forEach(s -> System.out.println("Loaded: " + s));
-
+        result.forEach(s -> LOGGER.info("Loaded: " + s));
         return result;
     }
 }
