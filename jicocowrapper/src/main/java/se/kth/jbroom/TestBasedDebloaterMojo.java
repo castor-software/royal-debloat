@@ -113,7 +113,7 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
 
         /***************************************************************************/
 
-        JacocoWrapper jacocoWrapper = new JacocoWrapper(project.getBasedir(), new File(project.getBasedir().getAbsolutePath() + "/report.xml"), InvocationType.TEST);
+        JacocoWrapper jacocoWrapper = new JacocoWrapper(project, new File(project.getBasedir().getAbsolutePath() + "/report.xml"), InvocationType.TEST);
         Map<String, Set<String>> usageAnalysis = null;
 
         // run the usage analysis

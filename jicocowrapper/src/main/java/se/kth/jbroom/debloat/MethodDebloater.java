@@ -53,8 +53,8 @@ public class MethodDebloater {
             public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
                 MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
                 if (usedMethods.contains(name + desc)) {
-                    LOGGER.info("Removed unused method: " + name + desc + " in class ==> " + clazz);
-                    return new MethodThrowerException(mv);
+                    System.out.println("Removed unused method: " + name + desc + " in class ==> " + clazz);
+                    return new MethodExceptionThrower(mv);
                     // return null;
                 }
                 return mv;

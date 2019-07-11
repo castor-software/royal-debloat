@@ -3,8 +3,10 @@ package se.kth.jbroom.wrapper;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.maven.project.MavenProject;
 import org.xml.sax.SAXException;
-import se.kth.jbroom.reflection.MethodInvoker;
+import se.kth.jbroom.util.ClassesLoadedSingleton;
+import se.kth.jbroom.util.CmdExec;
 import se.kth.jbroom.util.MavenUtils;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -12,9 +14,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.*;
 
 public class JacocoWrapper {
@@ -25,12 +24,13 @@ public class JacocoWrapper {
 
     private static final Logger LOGGER = LogManager.getLogger(JacocoWrapper.class.getName());
 
+    private MavenProject mavenProject;
+
     private String entryClass;
     private String entryMethod;
     private String entryParameters;
 
     private File mavenHome;
-    private File baseDir;
     private File report;
 
     private InvocationType invocationType;
@@ -39,8 +39,8 @@ public class JacocoWrapper {
     //-------- CONSTRUCTOR/S --------/
     //------------------------------/
 
-    public JacocoWrapper(File baseDir, File report, InvocationType invocationType) {
-        this.baseDir = baseDir;
+    public JacocoWrapper(MavenProject mavenProject, File report, InvocationType invocationType) {
+        this.mavenProject = mavenProject;
         this.report = report;
         this.invocationType = invocationType;
 
@@ -49,8 +49,8 @@ public class JacocoWrapper {
         }
     }
 
-    public JacocoWrapper(File baseDir, File report, InvocationType invocationType, String entryClass, String entryMethod, String entryParameters, File mavenHome) {
-        this.baseDir = baseDir;
+    public JacocoWrapper(MavenProject mavenProject, File report, InvocationType invocationType, String entryClass, String entryMethod, String entryParameters, File mavenHome) {
+        this.mavenProject = mavenProject;
         this.report = report;
         this.invocationType = invocationType;
         this.entryClass = entryClass;
@@ -68,23 +68,22 @@ public class JacocoWrapper {
     //------------------------------/
 
     public Map<String, Set<String>> analyzeUsages() throws IOException, ParserConfigurationException, SAXException {
+        MavenUtils mavenUtils = new MavenUtils(mavenHome, mavenProject.getBasedir());
 
-//        runMaven(Arrays.asList("clean", "compile"), null);
+        Properties propertyTestClasspath = new Properties();
+        propertyTestClasspath.setProperty("mdep.outputFile", mavenProject.getBasedir().getAbsolutePath() + "/target/test-classpath");
+        propertyTestClasspath.setProperty("scope", "test");
 
-        MavenUtils mavenUtils = new MavenUtils(mavenHome, baseDir);
+        // write all the test classpath to file locally
+        mavenUtils.runMaven(Collections.singletonList("dependency:build-classpath"), propertyTestClasspath);
 
-        Properties pro2 = new Properties();
-        pro2.setProperty("mdep.outputFile", baseDir.getAbsolutePath() + "/test-classpath");
-        pro2.setProperty("scope", "test");
-        mavenUtils.runMaven(Collections.singletonList("dependency:build-classpath"), pro2);
-
-        Properties pro = new Properties();
-        pro.setProperty("outputDirectory", baseDir.getAbsolutePath() + "/target/classes");
-        pro.setProperty("includeScope", "compile");
-
-//        mavenUtils.runMaven(Collections.singletonList("dependency:copy-dependencies"), pro );
+//        Properties propertyCopyDependencies = new Properties();
+//        propertyCopyDependencies.setProperty("outputDirectory", baseDir.getAbsolutePath() + "/target/classes");
+//        propertyCopyDependencies.setProperty("includeScope", "compile");
+//        mavenUtils.runMaven(Collections.singletonList("dependency:copy-dependencies"), propertyCopyDependencies );
 //        JarUtils.decompressJars(baseDir.getAbsolutePath() + "/target/classes");
 
+        // instrument the code
         mavenUtils.runMaven(Collections.singletonList("org.jacoco:jacoco-maven-plugin:0.8.4:instrument"), null);
 
         switch (invocationType) {
@@ -92,53 +91,83 @@ public class JacocoWrapper {
                 mavenUtils.runMaven(Collections.singletonList("test"), null);
                 break;
             case ENTRY_POINT:
-                try {
-                    URLClassLoader urlClassLoader = createClassLoader(new File(baseDir, "test-classpath"));
-                    MethodInvoker.invokeMethod(urlClassLoader, entryClass, entryMethod, entryParameters);
-                } catch (IOException e) {
-                    LOGGER.error("Unable to invoke methods" + e);
-                }
+                CmdExec cmdExec = new CmdExec();
+                LOGGER.info("Output directory: " + mavenProject.getBuild().getOutputDirectory());
+                LOGGER.info("entryClass: " + entryClass);
+                LOGGER.info("entryParameters: " + entryParameters);
+
+                System.out.println("starting execution");
+
+                // add jacoco to the classpath
+                String classpath = addJacocoToClasspath(mavenProject.getBasedir().getAbsolutePath() + "/target/test-classpath");
+
+                // execute the application from entry point
+                Set<String> classesLoaded = cmdExec.execProcess(classpath, entryClass, entryParameters.split(" "));
+
+                System.out.println("Number of classes loaded: " + classesLoaded.size());
+
+                ClassesLoadedSingleton.INSTANCE.setClassesLoaded(classesLoaded);
+
+                // list the classes loaded
+                ClassesLoadedSingleton.INSTANCE.printClassesLoaded();
+
                 break;
             case CONSERVATIVE:
                 // TODO implement the conservative approach
                 break;
         }
 
-        FileUtils.moveFile(new File(baseDir, "jacoco.exec"), new File(baseDir, "target/jacoco.exec"));
+        // move the jacoco exec file to the target dir
+        FileUtils.moveFile(new File(mavenProject.getBasedir(), "jacoco.exec"), new File(mavenProject.getBasedir(), "target/jacoco.exec"));
 
+        // restore instrumented classes and generate the jacoco xml report
         mavenUtils.runMaven(Arrays.asList(
                 "org.jacoco:jacoco-maven-plugin:0.8.4:restore-instrumented-classes",
                 "org.jacoco:jacoco-maven-plugin:0.8.4:report"), null);
 
-        FileUtils.moveFile(new File(baseDir, "target/site/jacoco/jacoco.xml"), report);
+        // move the jacoco xml report
+        FileUtils.moveFile(new File(mavenProject.getBasedir(), "target/site/jacoco/jacoco.xml"), report);
 
+        // read the jacoco report
         JacocoReportReader reportReader = new JacocoReportReader();
 
         return reportReader.getUnusedClassesAndMethods(report);
     }
 
-    private URLClassLoader createClassLoader(File in) throws IOException {
-        BufferedReader buffer = new BufferedReader(new FileReader(in));
-        StringBuilder rawFile = new StringBuilder(baseDir.getAbsolutePath() + "/target/classes/:");
-        String line;
-        while ((line = buffer.readLine()) != null) {
-            rawFile.append(line);
+    private String addJacocoToClasspath(String file) throws IOException {
+        StringBuilder rawFile;
+        try (BufferedReader buffer = new BufferedReader(new FileReader(file))) {
+            rawFile = new StringBuilder(mavenProject.getBasedir().getAbsolutePath() + "/target/classes/:");
+            String line;
+            while ((line = buffer.readLine()) != null) {
+                rawFile.append(line);
+            }
         }
-        URL[] urls = Arrays.stream(rawFile.toString().split(":"))
-                .map(str -> {
-                    try {
-                        return new URL("file://" + str);
-                    } catch (MalformedURLException e) {
-                        LOGGER.error("failed to add to classpath: " + str);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toArray(URL[]::new);
-
-        for (URL url : urls) {
-            LOGGER.info("url: " + url.getPath());
-        }
-        return new URLClassLoader(urls);
+        return rawFile.toString();
     }
+
+//    private URLClassLoader createClassLoader(File in) throws IOException {
+//        BufferedReader buffer = new BufferedReader(new FileReader(in));
+//        StringBuilder rawFile = new StringBuilder(mavenProject.getBasedir().getAbsolutePath() + "/target/classes/:");
+//        String line;
+//        while ((line = buffer.readLine()) != null) {
+//            rawFile.append(line);
+//        }
+//        URL[] urls = Arrays.stream(rawFile.toString().split(":"))
+//                .map(str -> {
+//                    try {
+//                        return new URL("file://" + str);
+//                    } catch (MalformedURLException e) {
+//                        LOGGER.error("failed to add to classpath: " + str);
+//                        return null;
+//                    }
+//                })
+//                .filter(Objects::nonNull)
+//                .toArray(URL[]::new);
+//
+//        for (URL url : urls) {
+//            LOGGER.info("url: " + url.getPath());
+//        }
+//        return new URLClassLoader(urls);
+//    }
 }

@@ -16,7 +16,7 @@ public class CmdExec {
     //-------- CLASS FIELD/S --------/
     //------------------------------/
 
-    private static final Logger LOGGER = LogManager.getLogger(JarUtils.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(CmdExec.class.getName());
 
     //--------------------------------/
     //------- PUBLIC METHOD/S -------/
@@ -43,23 +43,24 @@ public class CmdExec {
 
             cmd = ArrayUtils.addAll(cmd, parameters);
 
-            LOGGER.info("Executing command: ");
-            Arrays.stream(cmd).forEach(s -> LOGGER.info(s + " "));
-            LOGGER.info("\n");
+            System.out.print("Executing command: ");
+            Arrays.asList(cmd).stream().forEach(s -> System.out.print(s + " "));
+            System.out.println("\n");
 
             Process p = Runtime.getRuntime().exec(cmd);
 
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
             while ((line = input.readLine()) != null) {
-                if (line.startsWith("[Loaded ") && line.endsWith(classPath + "/]")) {
+                if (line.startsWith("[Loaded ") && line.endsWith("target/classes" + "/]")) {
                     result.add(line.split(" ")[1]);
+                } else {
+//                    System.out.println("Not processed" + line);
                 }
             }
             input.close();
         } catch (Exception e) {
-            LOGGER.error(e);
+            System.err.println(e);
         }
-        result.forEach(s -> LOGGER.info("Loaded: " + s));
         return result;
     }
 }

@@ -7,7 +7,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.xml.sax.SAXException;
 import se.kth.jbroom.debloat.MethodDebloater;
-import se.kth.jbroom.util.CmdExec;
+import se.kth.jbroom.util.ClassesLoadedSingleton;
 import se.kth.jbroom.util.FileUtils;
 import se.kth.jbroom.util.JarUtils;
 import se.kth.jbroom.util.MavenUtils;
@@ -70,17 +70,10 @@ public class EntryPointDebloaterMojo extends AbstractMojo {
         // decompress the copied dependencies
         JarUtils.decompressJars(outputDirectory);
 
-        // getting the loaded classes
-        CmdExec cmdExec = new CmdExec();
-        getLog().info("Output directory: " + outputDirectory);
-        getLog().info("entryClass: " + entryClass);
-        getLog().info("entryParameters: " + entryParameters);
-        Set<String> classesLoaded = cmdExec.execProcess(outputDirectory, entryClass, entryParameters.split(" "));
-
         // getting the used methods/****************************************************************************************/
         JacocoWrapper jacocoWrapper = new JacocoWrapper(
-                project.getBasedir(),
-                new File(project.getBasedir().getAbsolutePath() + "/report.xml"),
+                project,
+                new File(project.getBasedir().getAbsolutePath() + "/target/report.xml"),
                 InvocationType.ENTRY_POINT,
                 entryClass,
                 entryMethod,
@@ -99,22 +92,17 @@ public class EntryPointDebloaterMojo extends AbstractMojo {
             getLog().error(e);
         }
 
-        Set<String> classesUsed = new HashSet<>();
 
-        for (Map.Entry<String, Set<String>> entry : usageAnalysis.entrySet()) {
-            if (entry.getValue() != null) {
-                classesUsed.add(entry.getKey());
-                getLog().info(entry.getKey() + " = " + entry.getValue() + "\n");
-            }
-        }
 
-        FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<String>(), classesLoaded);
+        // delete unused classes
+        FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<>(), ClassesLoadedSingleton.INSTANCE.getClassesLoaded());
         try {
             fileUtils.deleteUnusedClasses(outputDirectory);
         } catch (IOException e) {
             getLog().error("Error: " + e);
         }
 
+        // delete unused methods
         MethodDebloater methodDebloater = new MethodDebloater(outputDirectory, usageAnalysis);
         try {
             methodDebloater.removeUnusedMethods();
@@ -122,7 +110,22 @@ public class EntryPointDebloaterMojo extends AbstractMojo {
             getLog().error("Error: " + e);
         }
 
-        getLog().info("Classes used: " + classesUsed.size() + ", " + "Classes unused: " + fileUtils.getNbClassesRemoved() + ", " + "Total: " + (classesUsed.size() + fileUtils.getNbClassesRemoved()));
+
+//        // getting the loaded classes
+//        CmdExec cmdExec = new CmdExec();
+//        getLog().info("Output directory: " + outputDirectory);
+//        getLog().info("entryClass: " + entryClass);
+//        getLog().info("entryParameters: " + entryParameters);
+//        Set<String> classesLoaded = cmdExec.execProcess(outputDirectory, entryClass, entryParameters.split(" "));
+//
+//        // delete unused classes
+//        FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<>(), classesLoaded);
+//        try {
+//            fileUtils.deleteUnusedClasses(outputDirectory);
+//        } catch (IOException e) {
+//            getLog().error("Error: " + e);
+//        }
+
         getLog().info("***** DEBLOAT FROM FROM ENTRY POINT SUCCESS *****");
     }
 }
