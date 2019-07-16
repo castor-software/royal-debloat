@@ -6,12 +6,13 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.xml.sax.SAXException;
-import se.kth.jbroom.debloat.MethodDebloater;
+import se.kth.jbroom.debloat.AbstractMethodDebloat;
+import se.kth.jbroom.debloat.EntryPointMethodDebloat;
 import se.kth.jbroom.util.ClassesLoadedSingleton;
 import se.kth.jbroom.util.FileUtils;
 import se.kth.jbroom.util.JarUtils;
 import se.kth.jbroom.util.MavenUtils;
-import se.kth.jbroom.wrapper.InvocationType;
+import se.kth.jbroom.wrapper.InvocationTypeEnum;
 import se.kth.jbroom.wrapper.JacocoWrapper;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -27,7 +28,7 @@ import java.util.Set;
  * Non covered elements are removed from the final jar file.
  */
 @Mojo(name = "entry-point-debloat", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, threadSafe = true)
-public class EntryPointDebloaterMojo extends AbstractMojo {
+public class EntryPointDebloatMojo extends AbstractMojo {
 
     //--------------------------------/
     //-------- CLASS FIELD/S --------/
@@ -70,11 +71,11 @@ public class EntryPointDebloaterMojo extends AbstractMojo {
         // decompress the copied dependencies
         JarUtils.decompressJars(outputDirectory);
 
-        // getting the used methods/****************************************************************************************/
+        // getting the used methods
         JacocoWrapper jacocoWrapper = new JacocoWrapper(
                 project,
                 new File(project.getBasedir().getAbsolutePath() + "/target/report.xml"),
-                InvocationType.ENTRY_POINT,
+                InvocationTypeEnum.ENTRY_POINT,
                 entryClass,
                 entryMethod,
                 entryParameters,
@@ -92,8 +93,6 @@ public class EntryPointDebloaterMojo extends AbstractMojo {
             getLog().error(e);
         }
 
-
-
         // delete unused classes
         FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<>(), ClassesLoadedSingleton.INSTANCE.getClassesLoaded());
         try {
@@ -103,28 +102,29 @@ public class EntryPointDebloaterMojo extends AbstractMojo {
         }
 
         // delete unused methods
-        MethodDebloater methodDebloater = new MethodDebloater(outputDirectory, usageAnalysis);
+        AbstractMethodDebloat entryPointMethodDebloater = new EntryPointMethodDebloat(outputDirectory, usageAnalysis);
         try {
-            methodDebloater.removeUnusedMethods();
+            entryPointMethodDebloater.removeUnusedMethods();
         } catch (IOException e) {
             getLog().error("Error: " + e);
         }
 
 
-//        // getting the loaded classes
-//        CmdExec cmdExec = new CmdExec();
-//        getLog().info("Output directory: " + outputDirectory);
-//        getLog().info("entryClass: " + entryClass);
-//        getLog().info("entryParameters: " + entryParameters);
-//        Set<String> classesLoaded = cmdExec.execProcess(outputDirectory, entryClass, entryParameters.split(" "));
-//
-//        // delete unused classes
-//        FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<>(), classesLoaded);
-//        try {
-//            fileUtils.deleteUnusedClasses(outputDirectory);
-//        } catch (IOException e) {
-//            getLog().error("Error: " + e);
-//        }
+/*
+        // getting the loaded classes
+        CmdExec cmdExec = new CmdExec();
+        getLog().info("Output directory: " + outputDirectory);
+        getLog().info("entryClass: " + entryClass);
+        getLog().info("entryParameters: " + entryParameters);
+        Set<String> classesLoaded = cmdExec.execProcess(outputDirectory, entryClass, entryParameters.split(" "));
+
+        // delete unused classes
+        FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<>(), classesLoaded);
+        try {
+            fileUtils.deleteUnusedClasses(outputDirectory);
+        } catch (IOException e) {
+            getLog().error("Error: " + e);
+        }*/
 
         getLog().info("***** DEBLOAT FROM FROM ENTRY POINT SUCCESS *****");
     }

@@ -1,4 +1,4 @@
-package se.kth.jbroom.debloat;
+package se.kth.jbroom.adapter;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -29,7 +29,6 @@ public class ClassAdapter extends ClassVisitor implements Opcodes {
             final String[] interfaces) {
         super.visit(version, access, name, signature, superName, interfaces);
 
-
         isRemovable = !(((access & Opcodes.ACC_INTERFACE) != 0) ||
                 ((access & Opcodes.ACC_ENUM) != 0) ||
                 ((access & Opcodes.ACC_ANNOTATION) != 0) ||
@@ -37,7 +36,6 @@ public class ClassAdapter extends ClassVisitor implements Opcodes {
 //                (name.matches(".*[$]\\d+")) || // annonymous classes
                 (name.contains("$")) ||
                 extendsThrowable(superName));
-
     }
 
     private boolean extendsThrowable(String className) {

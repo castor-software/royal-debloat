@@ -6,13 +6,14 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.xml.sax.SAXException;
-import se.kth.jbroom.debloat.MethodDebloater;
+import se.kth.jbroom.debloat.AbstractMethodDebloat;
+import se.kth.jbroom.debloat.TestBasedMethodDebloat;
 import se.kth.jbroom.loader.LoaderCollector;
 import se.kth.jbroom.loader.TestBasedClassLoader;
 import se.kth.jbroom.util.FileUtils;
 import se.kth.jbroom.util.JarUtils;
 import se.kth.jbroom.util.MavenUtils;
-import se.kth.jbroom.wrapper.InvocationType;
+import se.kth.jbroom.wrapper.InvocationTypeEnum;
 import se.kth.jbroom.wrapper.JacocoWrapper;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -28,7 +29,7 @@ import java.util.*;
  * Non covered elements are removed from the final jar file.
  */
 @Mojo(name = "test-based-debloat", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, threadSafe = true)
-public class TestBasedDebloaterMojo extends AbstractMojo {
+public class TestBasedDebloatMojo extends AbstractMojo {
 
     private ArrayList<String> tests = new ArrayList<>();
 
@@ -67,7 +68,7 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
             Class arrayClass = Class.forName("[Ljava.lang.Class;");
 
             // Create a new class loader with the directory
-            cl = new TestBasedClassLoader(testOutputDirectory, outputDirectory, TestBasedDebloaterMojo.class.getClassLoader());
+            cl = new TestBasedClassLoader(testOutputDirectory, outputDirectory, TestBasedDebloatMojo.class.getClassLoader());
 
             Thread.currentThread().setContextClassLoader(cl);
 
@@ -113,7 +114,7 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
 
         /***************************************************************************/
 
-        JacocoWrapper jacocoWrapper = new JacocoWrapper(project, new File(project.getBasedir().getAbsolutePath() + "/report.xml"), InvocationType.TEST);
+        JacocoWrapper jacocoWrapper = new JacocoWrapper(project, new File(project.getBasedir().getAbsolutePath() + "/report.xml"), InvocationTypeEnum.TEST);
         Map<String, Set<String>> usageAnalysis = null;
 
         // run the usage analysis
@@ -135,16 +136,16 @@ public class TestBasedDebloaterMojo extends AbstractMojo {
             }
         }
 
-        FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<String>(), classesLoaded);
+        FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<>(), classesLoaded);
         try {
             fileUtils.deleteUnusedClasses(outputDirectory);
         } catch (IOException e) {
             getLog().error("Error: " + e);
         }
 
-        MethodDebloater methodDebloater = new MethodDebloater(outputDirectory, usageAnalysis);
+        AbstractMethodDebloat entryPointMethodDebloater = new TestBasedMethodDebloat(outputDirectory, usageAnalysis);
         try {
-            methodDebloater.removeUnusedMethods();
+            entryPointMethodDebloater.removeUnusedMethods();
         } catch (IOException e) {
             getLog().error("Error: " + e);
         }

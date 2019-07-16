@@ -33,26 +33,26 @@ public class JacocoWrapper {
     private File mavenHome;
     private File report;
 
-    private InvocationType invocationType;
+    private InvocationTypeEnum invocationTypeEnum;
 
     //--------------------------------/
     //-------- CONSTRUCTOR/S --------/
     //------------------------------/
 
-    public JacocoWrapper(MavenProject mavenProject, File report, InvocationType invocationType) {
+    public JacocoWrapper(MavenProject mavenProject, File report, InvocationTypeEnum invocationTypeEnum) {
         this.mavenProject = mavenProject;
         this.report = report;
-        this.invocationType = invocationType;
+        this.invocationTypeEnum = invocationTypeEnum;
 
         if (report.exists()) {
             FileUtils.deleteQuietly(report);
         }
     }
 
-    public JacocoWrapper(MavenProject mavenProject, File report, InvocationType invocationType, String entryClass, String entryMethod, String entryParameters, File mavenHome) {
+    public JacocoWrapper(MavenProject mavenProject, File report, InvocationTypeEnum invocationTypeEnum, String entryClass, String entryMethod, String entryParameters, File mavenHome) {
         this.mavenProject = mavenProject;
         this.report = report;
-        this.invocationType = invocationType;
+        this.invocationTypeEnum = invocationTypeEnum;
         this.entryClass = entryClass;
         this.entryMethod = entryMethod;
         this.entryParameters = entryParameters;
@@ -86,7 +86,7 @@ public class JacocoWrapper {
         // instrument the code
         mavenUtils.runMaven(Collections.singletonList("org.jacoco:jacoco-maven-plugin:0.8.4:instrument"), null);
 
-        switch (invocationType) {
+        switch (invocationTypeEnum) {
             case TEST:
                 mavenUtils.runMaven(Collections.singletonList("test"), null);
                 break;

@@ -1,9 +1,16 @@
 package se.kth.jbroom.util;
 
-import java.io.*;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import se.kth.jbroom.wrapper.JacocoWrapper;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -33,6 +40,11 @@ public class FileUtils {
      */
     private Set<String> classesUsed;
 
+    /**
+     * Class logger.
+     */
+    private static final Logger LOGGER = LogManager.getLogger(FileUtils.class.getName());
+
     //--------------------------------/
     //-------- CONSTRUCTOR/S --------/
     //------------------------------/
@@ -51,18 +63,70 @@ public class FileUtils {
     /**
      * Feed the list of non-removable classes.
      *
-     * @param pathToFile
+     * @param pathToFile The exclusion list file which contains the list of classes that will not be deleted.
      */
     public void setExclusionList(String pathToFile) {
         Path path = Paths.get(pathToFile);
         try (Stream<String> lines = Files.lines(path)) {
             lines.forEach(s -> exclusionSet.add(s.replaceAll("/", ".")));
         } catch (IOException e) {
-            System.err.println(e);
+            LOGGER.error(e);
         }
     }
 
-    public boolean isRemovable(String className) throws IOException {
+    /**
+     * Recursively remove unused classes in a directory.
+     *
+     * @param currentPath the start file path to delete.
+     */
+    public void deleteUnusedClasses(String currentPath) throws IOException {
+        File f = new File(currentPath);
+        File[] list = f.listFiles();
+        assert list != null;
+        for (File classFile : list) {
+            if (classFile.isDirectory()) {
+                // recursive call for directories
+                deleteUnusedClasses(classFile.getAbsolutePath());
+            } else if (classFile.getName().endsWith(".class")) {
+                String classFilePath = classFile.getAbsolutePath();
+
+                // get the binary name of the test file
+                String currentClassName = classFilePath
+                        .replaceAll("/", ".")
+                        .substring(outputDirectory.length() + 1, classFilePath.length() - 6);
+
+                if (!classesUsed.contains(currentClassName) &&
+                        isRemovable(currentClassName.replace("/", ".")) &&
+                        !exclusionSet.contains(currentClassName)) {
+                    // get the current directory
+                    File parent = new File(classFile.getParent());
+                    // remove the file
+                    LOGGER.info("Removing unused class: " + currentClassName);
+                    Files.delete(classFile.toPath());
+                    nbClassesRemoved++;
+                    // remove the parent folder if is empty
+                    while (parent.isDirectory() && Objects.requireNonNull(parent.listFiles()).length == 0) {
+                        deleteDirectory(parent);
+                        parent = parent.getParentFile();
+                    }
+                }
+            }
+        }
+    }
+
+    //--------------------------------/
+    //------- GETTER METHOD/S -------/
+    //------------------------------/
+
+    public int getNbClassesRemoved() {
+        return nbClassesRemoved;
+    }
+
+    //--------------------------------/
+    //------ PRIVATE METHOD/S -------/
+    //------------------------------/
+
+    private boolean isRemovable(String className) throws IOException {
 //
 //        System.out.println("The classname: " + className);
 //
@@ -94,68 +158,6 @@ public class FileUtils {
 //        return cv.isRemovable;
     }
 
-    /**
-     * Recursively remove classes that were not traced.
-     *
-     * @param currentPath the start file path to delete.
-     */
-    public void deleteUnusedClasses(String currentPath) throws IOException {
-        File f = new File(currentPath);
-        File[] list = f.listFiles();
-        for (File classFile : list) {
-            if (classFile.isDirectory()) {
-                // recursive call for directories
-                deleteUnusedClasses(classFile.getAbsolutePath());
-            } else if (classFile.getName().endsWith(".class")) {
-                String classFilePath = classFile.getAbsolutePath();
-                // get the binary name of the test file
-                String currentClassName = classFilePath
-                        .replaceAll("/", ".")
-                        .substring(outputDirectory.length() + 1, classFilePath.length() - 6);
-
-                // check if we can remove the class safely
-//                if(classesUsed.contains(currentClassName)){
-//                    System.out.println("is contained");
-//                }
-
-                if (!classesUsed.contains(currentClassName) && isRemovable(currentClassName.replace("/", ".")) && !exclusionSet.contains(currentClassName)) {
-                    // get the current directory
-                    File parent = new File(classFile.getParent());
-                    // remove the file
-                    classFile.delete();
-                    nbClassesRemoved++;
-                    // remove the parent folder if is empty
-                    while (parent.isDirectory() && parent.listFiles().length == 0) {
-                        deleteDirectory(parent);
-                        parent = parent.getParentFile();
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Rename a folder in a given path.
-     *
-     * @param currentFolderPath
-     * @param newNameFolderPath
-     */
-    public static boolean renameFolder(String currentFolderPath, String newNameFolderPath) {
-        File file = new File(currentFolderPath);
-        return file.renameTo(new File(newNameFolderPath));
-    }
-
-    //--------------------------------/
-    //------- GETTER METHOD/S -------/
-    //------------------------------/
-
-    public int getNbClassesRemoved() {
-        return nbClassesRemoved;
-    }
-
-    //--------------------------------/
-    //------ PRIVATE METHOD/S -------/
-    //------------------------------/
 
     private void deleteDirectory(final File directory) throws IOException {
         if (!directory.exists()) {

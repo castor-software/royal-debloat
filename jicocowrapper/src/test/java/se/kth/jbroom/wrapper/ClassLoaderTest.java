@@ -1,7 +1,7 @@
 package se.kth.jbroom.wrapper;
 
 import se.kth.jbroom.loader.TestBasedClassLoader;
-import se.kth.jbroom.TestBasedDebloaterMojo;
+import se.kth.jbroom.TestBasedDebloatMojo;
 import se.kth.jbroom.util.JarUtils;
 
 import java.io.File;
@@ -29,7 +29,7 @@ public class ClassLoaderTest {
             Class arrayClass = Class.forName("[Ljava.lang.Class;");
 
             // Create a new class loader with the directory
-            cl = new TestBasedClassLoader(testOutputDirectory, outputDirectory, TestBasedDebloaterMojo.class.getClassLoader());
+            cl = new TestBasedClassLoader(testOutputDirectory, outputDirectory, TestBasedDebloatMojo.class.getClassLoader());
 
             Thread.currentThread().setContextClassLoader(cl);
 

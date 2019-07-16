@@ -59,7 +59,7 @@ public class CmdExec {
             }
             input.close();
         } catch (Exception e) {
-            System.err.println(e);
+            LOGGER.error("Failed to run: " + e);
         }
         return result;
     }

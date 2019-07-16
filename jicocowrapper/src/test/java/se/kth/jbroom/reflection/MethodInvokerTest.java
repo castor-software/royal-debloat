@@ -1,22 +1,5 @@
 package se.kth.jbroom.reflection;
 
-import org.junit.Test;
-import org.xml.sax.SAXException;
-import se.kth.jbroom.loader.EntryPointClassLoader;
-import se.kth.jbroom.loader.LoaderCollector;
-import se.kth.jbroom.wrapper.InvocationType;
-import se.kth.jbroom.wrapper.JacocoWrapper;
-
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
 //public class MethodInvokerTest {
 //
 //    public void invokeMethod() {
@@ -107,7 +90,7 @@ import java.util.Set;
 //
 //        JacocoWrapper jacocoWrapper = new JacocoWrapper(new File("/home/cesarsv/Documents/papers/2019_papers/royal-debloat/jicocowrapper/experiments/dummy-project"),
 //                new File("/home/cesarsv/Documents/papers/2019_papers/royal-debloat/jicocowrapper/experiments/dummy-project" + "/report.xml"),
-//                InvocationType.ENTRY_POINT,
+//                InvocationTypeEnum.ENTRY_POINT,
 //                entryClass,
 //                entryMethod,
 //                entryParameters,

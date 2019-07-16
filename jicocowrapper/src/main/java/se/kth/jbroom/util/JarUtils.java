@@ -4,6 +4,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
 import java.io.*;
+import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
@@ -36,15 +37,15 @@ public class JarUtils {
      */
     public static void decompressJars(String outputDirectory) {
         File files = new File(outputDirectory);
-        for (File f : files.listFiles()) {
+        for (File f : Objects.requireNonNull(files.listFiles())) {
             if (f.getName().endsWith(".jar")) {
-                LOGGER.info("Decompressing: f.getName()");
+                LOGGER.info("Decompressing:" + f.getName());
                 try {
                     JarUtils.decompressJarFile(f.getAbsolutePath(), outputDirectory);
                     // delete the original dependency jar file
                     f.delete();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    LOGGER.error(e);
                 }
             }
         }

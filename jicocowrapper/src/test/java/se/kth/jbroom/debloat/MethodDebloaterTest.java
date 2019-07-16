@@ -3,7 +3,7 @@ package se.kth.jbroom.debloat;
 //import org.junit.Before;
 //import org.xml.sax.SAXException;
 //import se.kth.jbroom.util.JarUtils;
-//import se.kth.jbroom.wrapper.InvocationType;
+//import se.kth.jbroom.wrapper.InvocationTypeEnum;
 //import se.kth.jbroom.wrapper.JacocoWrapper;
 //
 //import javax.xml.parsers.ParserConfigurationException;
@@ -25,7 +25,7 @@ package se.kth.jbroom.debloat;
 //    }
 //
 //    public void removeUnusedMethods() {
-//        JacocoWrapper jacocoWrapper = new JacocoWrapper(baseDir, new File(baseDir.getAbsolutePath() + "/report.xml"), InvocationType.TEST);
+//        JacocoWrapper jacocoWrapper = new JacocoWrapper(baseDir, new File(baseDir.getAbsolutePath() + "/report.xml"), InvocationTypeEnum.TEST);
 //        Map<String, Set<String>> usageAnalysis = null;
 //
 //        // run the usage analysis
@@ -47,7 +47,7 @@ package se.kth.jbroom.debloat;
 //            }
 //        }
 //
-//        MethodDebloater methodDebloater = new MethodDebloater(outputDirectory, usageAnalysis);
+//        EntryPointMethodDebloat methodDebloater = new EntryPointMethodDebloat(outputDirectory, usageAnalysis);
 //        try {
 //            methodDebloater.removeUnusedMethods();
 //        } catch (IOException e) {
