@@ -48,7 +48,7 @@ public class ClassVisitor extends EmptyVisitor {
     private JavaClass clazz;
     private ConstantPoolGen constants;
     private String classReferenceFormat;
-    private final DynamicCallManager DCManager = new DynamicCallManager();
+    private final DynamicCallManager dynamicCallManager = new DynamicCallManager();
     private List<String> methodCalls = new LinkedList<>();
 
     //--------------------------------/
@@ -70,8 +70,8 @@ public class ClassVisitor extends EmptyVisitor {
         jc.getConstantPool().accept(this);
         Method[] methods = jc.getMethods();
         for (Method method : methods) {
-            DCManager.retrieveCalls(method, jc);
-            DCManager.linkCalls(method);
+            dynamicCallManager.retrieveCalls(method, jc);
+            dynamicCallManager.linkCalls(method);
             method.accept(this);
         }
     }

@@ -57,10 +57,9 @@ public class MethodVisitor extends EmptyVisitor {
     //------------------------------/
 
     public MethodVisitor(MethodGen m, JavaClass jc) {
-        JavaClass visitedClass = jc;
         mg = m;
         cp = mg.getConstantPool();
-        format = "M:" + visitedClass.getClassName() + ":" + mg.getName() + "(" + argumentList(mg.getArgumentTypes()) + ")"
+        format = "M:" + jc.getClassName() + ":" + mg.getName() + "(" + argumentList(mg.getArgumentTypes()) + ")"
                 + " " + "(%s)%s:%s(%s)";
     }
 

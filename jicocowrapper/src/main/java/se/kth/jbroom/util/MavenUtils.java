@@ -19,9 +19,7 @@ public class MavenUtils {
     private File mavenHome;
     private File workingDir;
 
-
     private static final Logger LOGGER = LogManager.getLogger(MavenUtils.class.getName());
-
 
     //--------------------------------/
     //-------- CONSTRUCTOR/S --------/
@@ -36,6 +34,12 @@ public class MavenUtils {
     //------- PUBLIC METHOD/S -------/
     //------------------------------/
 
+    /**
+     * Execute the maven plugin dependency:copy-dependencies.
+     * Resolve direct and transitive dependencies.
+     *
+     * @param outputDirectory Directory to put the dependencies in.
+     */
     public void copyDependencies(String outputDirectory) {
         Properties copyDependenciesProperties = new Properties();
         copyDependenciesProperties.setProperty("outputDirectory", outputDirectory);
@@ -43,29 +47,34 @@ public class MavenUtils {
         runMaven(Collections.singletonList("dependency:copy-dependencies"), copyDependenciesProperties);
     }
 
+    /**
+     * Copy the resources to the specified directory.
+     * Resolve direct and transitive resources.
+     *
+     * @param outputDirectory Directory to put the resources in.
+     */
     public void copyResources(String outputDirectory) {
         Properties copyResourcesProperties = new Properties();
         copyResourcesProperties.setProperty("outputDirectory", outputDirectory + "/resources");
         runMaven(Collections.singletonList("resources:resources"), copyResourcesProperties);
     }
 
+    /**
+     * General method used to run maven goals based on a specified set of properties.
+     */
     public void runMaven(List<String> goals, Properties properties) {
         File pomFile = new File(workingDir, "pom.xml");
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setPomFile(pomFile);
-        if (properties != null)
+        if (properties != null) {
             request.setProperties(properties);
+        }
         request.setGoals(goals);
-        // request.getOutputHandler(s -> System.out.println(s));
-        // request.getErrorHandler(s -> System.out.println(s));
         request.setTimeoutInSeconds(TEST_EXECUTION_TIMEOUT);
-
         Invoker invoker = new DefaultInvoker();
         invoker.setMavenHome(mavenHome);
         invoker.setWorkingDirectory(workingDir);
-        // invoker.setErrorHandler(s -> System.out.println(s));
-        // invoker.setOutputHandler(s -> System.out.println(s));
         try {
             InvocationResult result = invoker.execute(request);
             result.getExitCode();

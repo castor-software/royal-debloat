@@ -33,26 +33,26 @@ public class JacocoWrapper {
     private File mavenHome;
     private File report;
 
-    private InvocationTypeEnum invocationTypeEnum;
+    private DebloatTypeEnum debloatTypeEnum;
 
     //--------------------------------/
     //-------- CONSTRUCTOR/S --------/
     //------------------------------/
 
-    public JacocoWrapper(MavenProject mavenProject, File report, InvocationTypeEnum invocationTypeEnum) {
+    public JacocoWrapper(MavenProject mavenProject, File report, DebloatTypeEnum debloatTypeEnum) {
         this.mavenProject = mavenProject;
         this.report = report;
-        this.invocationTypeEnum = invocationTypeEnum;
+        this.debloatTypeEnum = debloatTypeEnum;
 
         if (report.exists()) {
             FileUtils.deleteQuietly(report);
         }
     }
 
-    public JacocoWrapper(MavenProject mavenProject, File report, InvocationTypeEnum invocationTypeEnum, String entryClass, String entryMethod, String entryParameters, File mavenHome) {
+    public JacocoWrapper(MavenProject mavenProject, File report, DebloatTypeEnum debloatTypeEnum, String entryClass, String entryMethod, String entryParameters, File mavenHome) {
         this.mavenProject = mavenProject;
         this.report = report;
-        this.invocationTypeEnum = invocationTypeEnum;
+        this.debloatTypeEnum = debloatTypeEnum;
         this.entryClass = entryClass;
         this.entryMethod = entryMethod;
         this.entryParameters = entryParameters;
@@ -86,7 +86,7 @@ public class JacocoWrapper {
         // instrument the code
         mavenUtils.runMaven(Collections.singletonList("org.jacoco:jacoco-maven-plugin:0.8.4:instrument"), null);
 
-        switch (invocationTypeEnum) {
+        switch (debloatTypeEnum) {
             case TEST_DEBLOAT:
                 mavenUtils.runMaven(Collections.singletonList("test"), null);
                 break;

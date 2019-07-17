@@ -40,21 +40,12 @@ public class CmdExec {
                     "-classpath",
                     classPath,
                     clazzFullyQualifiedName};
-
             cmd = ArrayUtils.addAll(cmd, parameters);
-
-            System.out.print("Executing command: ");
-            Arrays.asList(cmd).stream().forEach(s -> System.out.print(s + " "));
-            System.out.println("\n");
-
             Process p = Runtime.getRuntime().exec(cmd);
-
             BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
             while ((line = input.readLine()) != null) {
                 if (line.startsWith("[Loaded ") && line.endsWith("target/classes" + "/]")) {
                     result.add(line.split(" ")[1]);
-                } else {
-//                    System.out.println("Not processed" + line);
                 }
             }
             input.close();

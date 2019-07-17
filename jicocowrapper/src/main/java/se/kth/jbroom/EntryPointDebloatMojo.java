@@ -12,7 +12,7 @@ import se.kth.jbroom.util.ClassesLoadedSingleton;
 import se.kth.jbroom.util.FileUtils;
 import se.kth.jbroom.util.JarUtils;
 import se.kth.jbroom.util.MavenUtils;
-import se.kth.jbroom.wrapper.InvocationTypeEnum;
+import se.kth.jbroom.wrapper.DebloatTypeEnum;
 import se.kth.jbroom.wrapper.JacocoWrapper;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -34,7 +34,10 @@ public class EntryPointDebloatMojo extends AbstractMojo {
     //-------- CLASS FIELD/S --------/
     //------------------------------/
 
-    private static final File mavenHome = new File("/usr/share/maven");
+    /**
+     * The maven home file, assuming either an environment variable M2_HOME, or that mvn command exists in PATH.
+     */
+    private static final File mavenHome = new File(System.getenv().get("M2_HOME"));
 
     @Parameter(defaultValue = "${project}", readonly = true)
     private MavenProject project;
@@ -75,7 +78,7 @@ public class EntryPointDebloatMojo extends AbstractMojo {
         JacocoWrapper jacocoWrapper = new JacocoWrapper(
                 project,
                 new File(project.getBasedir().getAbsolutePath() + "/target/report.xml"),
-                InvocationTypeEnum.ENTRY_POINT_DEBLOAT,
+                DebloatTypeEnum.ENTRY_POINT_DEBLOAT,
                 entryClass,
                 entryMethod,
                 entryParameters,
@@ -98,33 +101,16 @@ public class EntryPointDebloatMojo extends AbstractMojo {
         try {
             fileUtils.deleteUnusedClasses(outputDirectory);
         } catch (IOException e) {
-            getLog().error("Error: " + e);
+            getLog().error("Error deleting unused classes: " + e);
         }
 
         // delete unused methods
-        AbstractMethodDebloat entryPointMethodDebloater = new EntryPointMethodDebloat(outputDirectory, usageAnalysis);
+        AbstractMethodDebloat entryPointMethodDebloat = new EntryPointMethodDebloat(outputDirectory, usageAnalysis);
         try {
-            entryPointMethodDebloater.removeUnusedMethods();
+            entryPointMethodDebloat.removeUnusedMethods();
         } catch (IOException e) {
             getLog().error("Error: " + e);
         }
-
-
-/*
-        // getting the loaded classes
-        CmdExec cmdExec = new CmdExec();
-        getLog().info("Output directory: " + outputDirectory);
-        getLog().info("entryClass: " + entryClass);
-        getLog().info("entryParameters: " + entryParameters);
-        Set<String> classesLoaded = cmdExec.execProcess(outputDirectory, entryClass, entryParameters.split(" "));
-
-        // delete unused classes
-        FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<>(), classesLoaded);
-        try {
-            fileUtils.deleteUnusedClasses(outputDirectory);
-        } catch (IOException e) {
-            getLog().error("Error: " + e);
-        }*/
 
         getLog().info("***** DEBLOAT FROM FROM ENTRY POINT SUCCESS *****");
     }

@@ -28,7 +28,10 @@ public class ConservativeDebloatMojo extends AbstractMojo {
     //-------- CLASS FIELD/S --------/
     //------------------------------/
 
-    private static final File mavenHome = new File("/usr/share/maven");
+    /**
+     * The maven home file, assuming either an environment variable M2_HOME, or that mvn command exists in PATH.
+     */
+    private static final File mavenHome = new File(System.getenv().get("M2_HOME"));
 
     @Parameter(defaultValue = "${project}", readonly = true)
     private MavenProject project;

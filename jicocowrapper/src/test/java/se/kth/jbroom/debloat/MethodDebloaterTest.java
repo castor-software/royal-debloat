@@ -3,7 +3,7 @@ package se.kth.jbroom.debloat;
 //import org.junit.Before;
 //import org.xml.sax.SAXException;
 //import se.kth.jbroom.util.JarUtils;
-//import se.kth.jbroom.wrapper.InvocationTypeEnum;
+//import se.kth.jbroom.wrapper.DebloatTypeEnum;
 //import se.kth.jbroom.wrapper.JacocoWrapper;
 //
 //import javax.xml.parsers.ParserConfigurationException;
@@ -25,7 +25,7 @@ package se.kth.jbroom.debloat;
 //    }
 //
 //    public void removeUnusedMethods() {
-//        JacocoWrapper jacocoWrapper = new JacocoWrapper(baseDir, new File(baseDir.getAbsolutePath() + "/report.xml"), InvocationTypeEnum.TEST_DEBLOAT);
+//        JacocoWrapper jacocoWrapper = new JacocoWrapper(baseDir, new File(baseDir.getAbsolutePath() + "/report.xml"), DebloatTypeEnum.TEST_DEBLOAT);
 //        Map<String, Set<String>> usageAnalysis = null;
 //
 //        // run the usage analysis

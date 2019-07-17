@@ -21,8 +21,6 @@ public class JCallGraphModifiedTest {
         jCallGraphModified.getAllMethodsCallsFromFile(
                 "/home/cesarsv/Documents/papers/2019_papers/royal-debloat/jicocowrapper/experiments/dummy-project/target/classes")
                 .forEach(System.out::println);
-
-        int c;
     }
 
     @Test
@@ -42,5 +40,4 @@ public class JCallGraphModifiedTest {
 
         System.out.println(usageAnalysis);
     }
-
 }

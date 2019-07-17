@@ -13,7 +13,7 @@ import se.kth.jbroom.loader.TestBasedClassLoader;
 import se.kth.jbroom.util.FileUtils;
 import se.kth.jbroom.util.JarUtils;
 import se.kth.jbroom.util.MavenUtils;
-import se.kth.jbroom.wrapper.InvocationTypeEnum;
+import se.kth.jbroom.wrapper.DebloatTypeEnum;
 import se.kth.jbroom.wrapper.JacocoWrapper;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -33,7 +33,10 @@ public class TestBasedDebloatMojo extends AbstractMojo {
 
     private ArrayList<String> tests = new ArrayList<>();
 
-    private File mavenHome = new File("/usr/share/maven");
+    /**
+     * The maven home file, assuming either an environment variable M2_HOME, or that mvn command exists in PATH.
+     */
+    private static final File mavenHome = new File(System.getenv().get("M2_HOME"));
 
     @Parameter(defaultValue = "${project}", readonly = true)
     private MavenProject project;
@@ -114,7 +117,7 @@ public class TestBasedDebloatMojo extends AbstractMojo {
 
         /***************************************************************************/
 
-        JacocoWrapper jacocoWrapper = new JacocoWrapper(project, new File(project.getBasedir().getAbsolutePath() + "/report.xml"), InvocationTypeEnum.TEST_DEBLOAT);
+        JacocoWrapper jacocoWrapper = new JacocoWrapper(project, new File(project.getBasedir().getAbsolutePath() + "/report.xml"), DebloatTypeEnum.TEST_DEBLOAT);
         Map<String, Set<String>> usageAnalysis = null;
 
         // run the usage analysis
