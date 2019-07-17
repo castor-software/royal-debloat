@@ -26,8 +26,8 @@ public class BaseClass {
     public class BaseClassInnerClass {
     }
 
-    //member public enum
-    public enum BaseClassMemberEnum {
-    }
+//    //member public enum
+//    public enum BaseClassMemberEnum {
+//    }
 
 }

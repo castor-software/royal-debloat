@@ -90,7 +90,7 @@ package se.kth.jbroom.reflection;
 //
 //        JacocoWrapper jacocoWrapper = new JacocoWrapper(new File("/home/cesarsv/Documents/papers/2019_papers/royal-debloat/jicocowrapper/experiments/dummy-project"),
 //                new File("/home/cesarsv/Documents/papers/2019_papers/royal-debloat/jicocowrapper/experiments/dummy-project" + "/report.xml"),
-//                InvocationTypeEnum.ENTRY_POINT,
+//                InvocationTypeEnum.ENTRY_POINT_DEBLOAT,
 //                entryClass,
 //                entryMethod,
 //                entryParameters,

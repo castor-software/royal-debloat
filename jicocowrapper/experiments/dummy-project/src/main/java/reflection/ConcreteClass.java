@@ -43,15 +43,15 @@ public class ConcreteClass extends BaseClass implements BaseInterface {
     class ConcreteClassDefaultClass {
     }
 
-    //member enum
-    enum ConcreteClassDefaultEnum {
-    }
-
-    public enum ConcreteClassPublicEnum {}
-
-    //member interface
-    public interface ConcreteClassPublicInterface {
-    }
+//    //member enum
+//    enum ConcreteClassDefaultEnum {
+//    }
+//
+//    public enum ConcreteClassPublicEnum {}
+//
+//    //member interface
+//    public interface ConcreteClassPublicInterface {
+//    }
 
 
 }

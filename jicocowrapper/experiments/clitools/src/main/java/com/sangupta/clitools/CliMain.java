@@ -121,7 +121,6 @@ public class CliMain {
 
 	/**
 	 * Show a list of all commands with their basic description
-	 * 
 	 */
 	private static void showCommandList() {
 		System.out.println("Available commands:\n");

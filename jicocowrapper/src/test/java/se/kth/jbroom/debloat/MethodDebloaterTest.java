@@ -25,7 +25,7 @@ package se.kth.jbroom.debloat;
 //    }
 //
 //    public void removeUnusedMethods() {
-//        JacocoWrapper jacocoWrapper = new JacocoWrapper(baseDir, new File(baseDir.getAbsolutePath() + "/report.xml"), InvocationTypeEnum.TEST);
+//        JacocoWrapper jacocoWrapper = new JacocoWrapper(baseDir, new File(baseDir.getAbsolutePath() + "/report.xml"), InvocationTypeEnum.TEST_DEBLOAT);
 //        Map<String, Set<String>> usageAnalysis = null;
 //
 //        // run the usage analysis

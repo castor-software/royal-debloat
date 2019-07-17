@@ -75,7 +75,7 @@ public class EntryPointDebloatMojo extends AbstractMojo {
         JacocoWrapper jacocoWrapper = new JacocoWrapper(
                 project,
                 new File(project.getBasedir().getAbsolutePath() + "/target/report.xml"),
-                InvocationTypeEnum.ENTRY_POINT,
+                InvocationTypeEnum.ENTRY_POINT_DEBLOAT,
                 entryClass,
                 entryMethod,
                 entryParameters,

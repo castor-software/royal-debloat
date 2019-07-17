@@ -43,7 +43,7 @@ public class ConservativeDebloatMojo extends AbstractMojo {
         String outputDirectory = project.getBuild().getOutputDirectory();
         File baseDir = project.getBasedir();
 
-        getLog().info("***** STARTING CONSERVATIVE DEBLOAT *****");
+        getLog().info("***** STARTING CONSERVATIVE_DEBLOAT DEBLOAT *****");
 
         MavenUtils mavenUtils = new MavenUtils(mavenHome, baseDir);
 
@@ -78,6 +78,6 @@ public class ConservativeDebloatMojo extends AbstractMojo {
             getLog().error("Error: " + e);
         }
 
-        getLog().info("***** CONSERVATIVE DEBLOAT SUCCESS *****");
+        getLog().info("***** CONSERVATIVE_DEBLOAT DEBLOAT SUCCESS *****");
     }
 }

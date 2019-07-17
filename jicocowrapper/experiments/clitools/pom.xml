@@ -126,14 +126,15 @@
                 <executions>
                     <execution>
                         <goals>
+                            <goal>conservative-debloat</goal>
                             <!--<goal>test-based-debloat</goal>-->
-                            <goal>entry-point-debloat</goal>
+                            <!--<goal>entry-point-debloat</goal>-->
                         </goals>
-                        <configuration>
-                            <entryClass>com.sangupta.clitools.CliMain</entryClass>
-                            <entryMethod>main</entryMethod>
-                            <entryParameters>whoami</entryParameters>
-                        </configuration>
+                        <!--<configuration>-->
+                            <!--<entryClass>com.sangupta.clitools.CliMain</entryClass>-->
+                            <!--<entryMethod>main</entryMethod>-->
+                            <!--<entryParameters>whoami</entryParameters>-->
+                        <!--</configuration>-->
                     </execution>
                 </executions>
             </plugin>

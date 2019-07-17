@@ -87,10 +87,10 @@ public class JacocoWrapper {
         mavenUtils.runMaven(Collections.singletonList("org.jacoco:jacoco-maven-plugin:0.8.4:instrument"), null);
 
         switch (invocationTypeEnum) {
-            case TEST:
+            case TEST_DEBLOAT:
                 mavenUtils.runMaven(Collections.singletonList("test"), null);
                 break;
-            case ENTRY_POINT:
+            case ENTRY_POINT_DEBLOAT:
                 CmdExec cmdExec = new CmdExec();
                 LOGGER.info("Output directory: " + mavenProject.getBuild().getOutputDirectory());
                 LOGGER.info("entryClass: " + entryClass);
@@ -112,7 +112,7 @@ public class JacocoWrapper {
                 ClassesLoadedSingleton.INSTANCE.printClassesLoaded();
 
                 break;
-            case CONSERVATIVE:
+            case CONSERVATIVE_DEBLOAT:
                 // TODO implement the conservative approach
                 break;
         }

@@ -1,7 +1,7 @@
 package se.kth.jbroom.wrapper;
 
 public enum InvocationTypeEnum {
-    TEST,
-    ENTRY_POINT,
-    CONSERVATIVE
+    TEST_DEBLOAT,
+    ENTRY_POINT_DEBLOAT,
+    CONSERVATIVE_DEBLOAT
 }

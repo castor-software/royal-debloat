@@ -28,14 +28,15 @@
                 <executions>
                     <execution>
                         <goals>
-                            <goal>entry-point-debloat</goal>
+                            <goal>conservative-debloat</goal>
                             <!--<goal>test-based-debloat</goal>-->
+                            <!--<goal>entry-point-debloat</goal>-->
                         </goals>
-                        <configuration>
-                            <entryClass>${main.class}</entryClass>
-                            <entryMethod>main</entryMethod>
-                            <entryParameters>2 3</entryParameters>
-                        </configuration>
+                        <!--<configuration>-->
+                            <!--<entryClass>${main.class}</entryClass>-->
+                            <!--<entryMethod>main</entryMethod>-->
+                            <!--<entryParameters>2 3</entryParameters>-->
+                        <!--</configuration>-->
                     </execution>
                 </executions>
             </plugin>

@@ -90,41 +90,19 @@
                 <executions>
                     <execution>
                         <goals>
-                            <goal>entry-point-debloat</goal>
+                            <goal>conservative-debloat</goal>
+                            <!--<goal>entry-point-debloat</goal>-->
                             <!--<goal>test-based-debloat</goal>-->
                         </goals>
-                        <configuration>
-                            <entryClass>SJmp3.SJmp3gui</entryClass>
-                            <entryMethod>main</entryMethod>
-                            <entryParameters>null</entryParameters>
-                        </configuration>
+                        <!--<configuration>-->
+                            <!--<entryClass>SJmp3.SJmp3gui</entryClass>-->
+                            <!--<entryMethod>main</entryMethod>-->
+                            <!--<entryParameters>null</entryParameters>-->
+                        <!--</configuration>-->
                     </execution>
                 </executions>
             </plugin>
-            <!--&lt;!&ndash;Force Maven to copy dependencies&ndash;&gt;-->
-            <!--Assembly the fat jar-->
-             <!--<plugin>-->
-                 <!--<groupId>org.apache.maven.plugins</groupId>-->
-                 <!--<artifactId>maven-assembly-plugin</artifactId>-->
-                 <!--<executions>-->
-                     <!--<execution>-->
-                         <!--<phase>package</phase>-->
-                         <!--<goals>-->
-                             <!--<goal>single</goal>-->
-                         <!--</goals>-->
-                         <!--<configuration>-->
-                             <!--<archive>-->
-                                 <!--<manifest>-->
-                                     <!--<mainClass>SJmp3.SJmp3gui</mainClass>-->
-                                 <!--</manifest>-->
-                             <!--</archive>-->
-                             <!--<descriptorRefs>-->
-                                 <!--<descriptorRef>jar-with-dependencies</descriptorRef>-->
-                             <!--</descriptorRefs>-->
-                         <!--</configuration>-->
-                     <!--</execution>-->
-                 <!--</executions>-->
-             <!--</plugin>-->
+
         </plugins>
     </build>
 

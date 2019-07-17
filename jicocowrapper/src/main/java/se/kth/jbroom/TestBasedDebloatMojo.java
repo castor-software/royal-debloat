@@ -45,7 +45,7 @@ public class TestBasedDebloatMojo extends AbstractMojo {
         String outputDirectory = project.getBuild().getOutputDirectory();
         File baseDir = project.getBasedir();
 
-        getLog().info("***** STARTING DEBLOAT FROM TEST COVERAGE *****");
+        getLog().info("***** STARTING DEBLOAT FROM TEST_DEBLOAT COVERAGE *****");
 
         MavenUtils mavenUtils = new MavenUtils(mavenHome, baseDir);
 
@@ -114,7 +114,7 @@ public class TestBasedDebloatMojo extends AbstractMojo {
 
         /***************************************************************************/
 
-        JacocoWrapper jacocoWrapper = new JacocoWrapper(project, new File(project.getBasedir().getAbsolutePath() + "/report.xml"), InvocationTypeEnum.TEST);
+        JacocoWrapper jacocoWrapper = new JacocoWrapper(project, new File(project.getBasedir().getAbsolutePath() + "/report.xml"), InvocationTypeEnum.TEST_DEBLOAT);
         Map<String, Set<String>> usageAnalysis = null;
 
         // run the usage analysis
