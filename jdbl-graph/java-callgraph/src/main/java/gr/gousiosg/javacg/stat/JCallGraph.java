@@ -28,15 +28,21 @@
 
 package gr.gousiosg.javacg.stat;
 
-import java.io.*;
-import java.util.*;
+import gr.gousiosg.javacg.utils.impl.StdoutReporter;
+import org.apache.bcel.classfile.ClassParser;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import org.apache.bcel.classfile.ClassParser;
 
 /**
  * Constructs a callgraph out of a JAR archive. Can combine multiple archives
@@ -51,7 +57,7 @@ public class JCallGraph {
         Function<ClassParser, ClassVisitor> getClassVisitor =
                 (ClassParser cp) -> {
                     try {
-                        return new ClassVisitor(cp.parse());
+                        return new ClassVisitor(cp.parse(), new StdoutReporter());
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -69,22 +75,13 @@ public class JCallGraph {
                 try (JarFile jar = new JarFile(f)) {
                     Stream<JarEntry> entries = enumerationAsStream(jar.entries());
 
-                    String methodCalls = entries.
-                            flatMap(e -> {
-                                if (e.isDirectory() || !e.getName().endsWith(".class"))
-                                    return (new ArrayList<String>()).stream();
+                    entries.forEach(t -> {
+                        if (t.isDirectory() || !t.getName().endsWith(".class"))
+                            return;
 
-                                ClassParser cp = new ClassParser(arg, e.getName());
-                                return getClassVisitor.apply(cp).start().methodCalls().stream();
-                            }).
-                            map(s -> s + "\n").
-                            reduce(new StringBuilder(),
-                                    StringBuilder::append,
-                                    StringBuilder::append).toString();
-
-                    BufferedWriter log = new BufferedWriter(new OutputStreamWriter(System.out));
-                    log.write(methodCalls);
-                    log.close();
+                        ClassParser cp = new ClassParser(arg, t.getName());
+                        getClassVisitor.apply(cp).start();
+                    });
                 }
             }
         } catch (IOException e) {

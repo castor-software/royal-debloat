@@ -28,6 +28,7 @@
 
 package gr.gousiosg.javacg.stat;
 
+import gr.gousiosg.javacg.utils.IReporter;
 import org.apache.bcel.classfile.Constant;
 import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.classfile.EmptyVisitor;
@@ -47,14 +48,15 @@ public class ClassVisitor extends EmptyVisitor {
 
     private JavaClass clazz;
     private ConstantPoolGen constants;
-    private String classReferenceFormat;
     private final DynamicCallManager DCManager = new DynamicCallManager();
     private List<String> methodCalls = new ArrayList<>();
+    private IReporter reporter;
 
-    public ClassVisitor(JavaClass jc) {
+    public ClassVisitor(JavaClass jc, IReporter reporter) {
         clazz = jc;
         constants = new ConstantPoolGen(clazz.getConstantPool());
-        classReferenceFormat = "C:" + clazz.getClassName() + " %s";
+
+        this.reporter = reporter;
     }
 
     public void visitJavaClass(JavaClass jc) {
@@ -75,16 +77,14 @@ public class ClassVisitor extends EmptyVisitor {
             if (constant == null)
                 continue;
             if (constant.getTag() == 7) {
-                String referencedClass = 
-                    constantPool.constantToString(constant);
-                System.out.println(String.format(classReferenceFormat, referencedClass));
+                this.reporter.visitConstantPool(clazz, constant, constantPool);
             }
         }
     }
 
     public void visitMethod(Method method) {
         MethodGen mg = new MethodGen(method, clazz.getClassName(), constants);
-        MethodVisitor visitor = new MethodVisitor(mg, clazz);
+        MethodVisitor visitor = new MethodVisitor(mg, clazz, reporter);
         methodCalls.addAll(visitor.start());
     }
 

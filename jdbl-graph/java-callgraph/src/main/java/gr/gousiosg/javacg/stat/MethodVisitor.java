@@ -28,6 +28,7 @@
 
 package gr.gousiosg.javacg.stat;
 
+import gr.gousiosg.javacg.utils.IReporter;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.*;
 
@@ -48,13 +49,14 @@ public class MethodVisitor extends EmptyVisitor {
     private ConstantPoolGen cp;
     private String format;
     private List<String> methodCalls = new ArrayList<>();
+    private IReporter reporter;
 
-    public MethodVisitor(MethodGen m, JavaClass jc) {
+    public MethodVisitor(MethodGen m, JavaClass jc, IReporter reporter) {
         visitedClass = jc;
         mg = m;
         cp = mg.getConstantPool();
-        format = "M:" + visitedClass.getClassName() + ":" + mg.getName() + "(" + argumentList(mg.getArgumentTypes()) + ")"
-            + " " + "(%s)%s:%s(%s)";
+
+        this.reporter = reporter;
     }
 
     private String argumentList(Type[] arguments) {
@@ -91,27 +93,28 @@ public class MethodVisitor extends EmptyVisitor {
 
     @Override
     public void visitINVOKEVIRTUAL(INVOKEVIRTUAL i) {
-        methodCalls.add(String.format(format,"M",i.getReferenceType(cp),i.getMethodName(cp),argumentList(i.getArgumentTypes(cp))));
+
+        this.reporter.visitINVOKEVIRTUAL(cp, mg, visitedClass, i);
     }
 
     @Override
     public void visitINVOKEINTERFACE(INVOKEINTERFACE i) {
-        methodCalls.add(String.format(format,"I",i.getReferenceType(cp),i.getMethodName(cp),argumentList(i.getArgumentTypes(cp))));
+
+        this.reporter.visitINVOKEINTERFACE(cp, mg, visitedClass, i);
     }
 
     @Override
     public void visitINVOKESPECIAL(INVOKESPECIAL i) {
-        methodCalls.add(String.format(format,"O",i.getReferenceType(cp),i.getMethodName(cp),argumentList(i.getArgumentTypes(cp))));
+        this.reporter.visitINVOKESPECIAL(cp, mg, visitedClass, i);
     }
 
     @Override
     public void visitINVOKESTATIC(INVOKESTATIC i) {
-        methodCalls.add(String.format(format,"S",i.getReferenceType(cp),i.getMethodName(cp),argumentList(i.getArgumentTypes(cp))));
+        this.reporter.visitINVOKESTATIC(cp, mg, visitedClass, i);
     }
 
     @Override
     public void visitINVOKEDYNAMIC(INVOKEDYNAMIC i) {
-        methodCalls.add(String.format(format,"D",i.getType(cp),i.getMethodName(cp),
-                argumentList(i.getArgumentTypes(cp))));
+        this.reporter.visitINVOKEDYNAMIC(cp, mg, visitedClass, i);
     }
 }

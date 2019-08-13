@@ -22,6 +22,8 @@
     <fileSet>
       <includes>
         <include>gr/gousiosg/javacg/stat/*.class</include>
+        <include>gr/gousiosg/javacg/utils/*.class</include>
+        <include>gr/gousiosg/javacg/utils/impl/*.class</include>
       </includes>
       <directory>target/classes</directory>
       <outputDirectory>/</outputDirectory>

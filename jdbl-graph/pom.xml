@@ -22,7 +22,7 @@
     </properties>
 
     <!-- Project description-->
-    <description>JDbl(pom) is a Maven plugin to automatically debloat Maven projects</description>
+    <description>TODO</description>
     <url>https://github.com/castor-software/royal-debloat/jdbl-graph</url>
 
     <issueManagement>
