@@ -1,0 +1,17 @@
+*.class
+nbproject/private/
+*.out
+*.swp
+*.DS_Store
+*.lock
+*~
+target/
+bin/
+.classpath
+.project
+.settings/
+
+# intellij
+.idea/
+*.iml
+
