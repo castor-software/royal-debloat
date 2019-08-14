@@ -28,7 +28,8 @@
 
 package gr.gousiosg.javacg.stat;
 
-import gr.gousiosg.javacg.utils.impl.StdoutReporter;
+import gr.gousiosg.javacg.utils.IReporter;
+import gr.gousiosg.javacg.utils.impl.*;
 import org.apache.bcel.classfile.ClassParser;
 
 import java.io.File;
@@ -52,12 +53,14 @@ import java.util.stream.StreamSupport;
  */
 public class JCallGraph {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+
+        BasePrintBasedReporter reporter= new DotGraphReporter();
 
         Function<ClassParser, ClassVisitor> getClassVisitor =
                 (ClassParser cp) -> {
                     try {
-                        return new ClassVisitor(cp.parse(), new StdoutReporter());
+                        return new ClassVisitor(cp.parse(), reporter);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -88,6 +91,8 @@ public class JCallGraph {
             System.err.println("Error while processing jar: " + e.getMessage());
             e.printStackTrace();
         }
+
+        reporter.close();
     }
 
     public static <T> Stream<T> enumerationAsStream(Enumeration<T> e) {
