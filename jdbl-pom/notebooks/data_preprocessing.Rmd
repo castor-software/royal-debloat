@@ -1,0 +1,138 @@
+---
+title: "Data Pre-processing"
+output: html_notebook
+---
+
+### Import required libraries
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(tidyverse)
+library(latex2exp)
+library(scales)
+library(extrafont)
+library(stringi)
+# set fonts
+loadfonts(device = "pdf")
+# font_import()
+# link www.fontsquirrel.com/fonts/latin-modern-roman
+
+# execute once to add fonts:
+# font_import(pattern = "lmroman*")
+# theme(legend.position = "top", text=element_text(size=14, family="LM Roman 10"))
+# set ggplot 
+theme_set(theme_bw())
+```
+
+### Descriptive statistics of the studied libraries
+
+```{r}
+description <- read.csv("Data/description10K.csv", header = TRUE, quote = "")
+
+# Set multi-module as boolean
+description$IsMultimodule <- ifelse(as.character(description$IsMultimodule) == "none","no","yes")
+
+# Remove libraries with no classes and no methods in the bytecode
+description <- description %>% filter(NbTypes != 0 & NbMethods != 0)
+# Types
+description$NbTypes <- as.numeric(description$NbTypes)
+summary(description$NbTypes)
+sd(description$NbTypes)
+sum(description$NbTypes)
+# Methods
+description$NbMethods <- as.numeric(description$NbMethods)
+summary(description$NbMethods)
+sd(description$NbMethods)
+sum(description$NbMethods)
+# Fields
+description$NbFields <- as.numeric(description$NbFields)
+summary(description$NbFields)
+sd(description$NbFields)
+sum(description$NbFields)
+# Annotations
+description$NbAnnotations <- as.numeric(description$NbAnnotations)
+summary(description$NbAnnotations)
+sd(description$NbAnnotations)
+sum(description$NbAnnotations)
+# Add direct usages
+tmp <- data %>%
+  mutate(Artifact = paste(paste(GroupId, ArtifactId, sep = ":"), Version, sep = ":")) %>%
+  select(Artifact, DUsages)
+tmp <- inner_join(tmp, description, by = "Artifact")
+summary(tmp$DUsages)
+sd(tmp$DUsages)
+sum(tmp$DUsages)
+
+description <- tmp
+# save the results df as a R object
+save(description, file="Data/description.RData")
+```
+
+### Read results data
+
+```{r}
+results <- read.csv("Data/results10K.csv", header = TRUE, quote = "")
+
+dim(results %>% dplyr::select(Artifact) %>% distinct())
+
+# Set multi-module as boolean
+results$IsMultimodule <- ifelse(as.character(results$IsMultimodule) == "none","no","yes")
+
+# Filter results by only including libraries with a description
+results <- results %>% filter(Artifact %in% description$Artifact)
+
+# pre-processing
+results <-
+  results %>% mutate(
+    UsedDeclared =  ifelse(Used == "true" &
+                             Declared == "true", "true", "false"),
+    UsedUndeclared =  ifelse(Used == "true" &
+                               Declared == "false", "true", "false"),
+    BloatedDeclared =  ifelse(Used == "false" &
+                                Declared == "true", "true", "false"),
+    BloatedUndeclared =  ifelse(Used == "false" &
+                                 Declared == "false", "true", "false")
+  )
+
+results$InConflict <- as.factor(ifelse(stri_detect_fixed(results$InConflict, c("conflict")), "In conflict", ifelse(stri_detect_fixed(results$InConflict, c("duplicate")), "Ommited for duplicate", "NO")))
+
+# save the results df as a R object
+save(results, file="Data/results.RData")
+```
+
+### Descriptive statistics of the results
+
+```{r}
+colnames(results)
+
+results %>% dplyr::count(Scope)
+results %>% dplyr::count(Optional)
+results %>% dplyr::count(Pack)
+results %>% dplyr::count(InConflict)
+results %>% dplyr::count(Artifact)
+results %>% dplyr::count(Type)
+
+results %>% dplyr::count(UsedDeclared)
+results %>% dplyr::count(UsedUndeclared)
+
+results %>% dplyr::count(BloatedDeclared)
+results %>% dplyr::count(BloatedUndeclared)
+
+# summarise direct deps
+tmp <- results %>%
+  group_by(Artifact, Type) %>% 
+  summarise(nbDirectDeps = n()) %>% 
+  filter(Type == "direct")
+summary(tmp$nbDirectDeps)
+sd(tmp$nbDirectDeps)
+sum(tmp$nbDirectDeps)
+
+# summarise transitive deps
+tmp <- results %>% 
+  group_by(Artifact, Type) %>% 
+  summarise(nbTransitiveDeps = n()) %>% 
+  filter(Type == "transitive")
+summary(tmp$nbTransitiveDeps)
+sd(tmp$nbTransitiveDeps)
+sum(tmp$nbTransitiveDeps)
+```
+

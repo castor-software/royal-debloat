@@ -1,0 +1,134 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+require(stringr)
+
+sl4j <- read.csv("Data/slf4j_1.7.19-edges_new.csv", header = F)
+sl4j$V2 <- gsub("^.*/", "", sl4j$V2)
+sl4j$V1 <- as.character(sl4j$V1)
+
+# 146 use something else
+# 385 use only the core
+
+a <- sl4j %>%
+  rename(Node = V1) %>%
+  group_by(Node) %>%
+  summarise(all = n()) 
+
+b <- sl4j %>%
+  rename(Node = V1) %>%
+  group_by(Node) %>%
+  summarise(core = sum("Logger" == V2 | "LoggerFactory" == V2) )
+
+c <- inner_join(a, b, by = "Node")
+
+c <- c %>% mutate(UseOnlyCoreTypes = ifelse(all == core, "UseCore", ifelse(core == 0, "NoUseCore", "UseBoth"))) %>% select(Node, UseOnlyCoreTypes)
+
+x <- sl4j %>% 
+  group_by(V1, V2) %>%
+  count() %>% rename(Node = V1)  
+
+d <- inner_join(c, x, by = "Node") %>% select(UseOnlyCoreTypes, V2)
+
+x <- d %>% 
+  group_by(V2, UseOnlyCoreTypes) %>% 
+  count() 
+
+# doing the plot ---------------------------------------------
+
+df <- data.frame(from = as.character(x$UseOnlyCoreTypes), 
+    to = as.character(x$V2), 
+    value = as.vector(x$n),
+    stringsAsFactors = FALSE)
+
+grid.col = c(UseCore = "red", NoUseCore = "black", UseBoth = "blue", Logger = "red", LoggerFactory = "red")
+
+chordDiagram(df, annotationTrack = "grid",  transparency = 0.6, grid.col = grid.col,
+    preAllocateTracks = list(track.height = max(strwidth(unlist(dimnames(df))))))
+
+abline(h = 0, lty = 2, col = "#00000080")
+
+# we go back to the first track and customize sector labels
+circos.track(track.index = 1, panel.fun = function(x, y) {
+    circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index, 
+        facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+}, bg.border = NA) # here set bg.border to NA is important
+
+circos.clear()
+
+```
+
+
+```{r}
+
+jsr <- read.csv("Data/jsr305-edges.csv", header = F)
+jsr$V2 <- gsub("^.*/", "", jsr$V2)
+jsr$V1 <- as.character(jsr$V1)
+
+a <- jsr %>%
+  rename(Node = V1) %>%
+  group_by(Node) %>%
+  summarise(all = n()) 
+
+b <- jsr %>%
+  rename(Node = V1) %>%
+  group_by(Node) %>%
+  summarise(core = sum("Nullable" == V2 | "Nonnull" == V2 | "Immutable" == V2 | "CheckForNull" == V2 | "ParametersAreNonnullByDefaul" == V2 | "CheckReturnValue" == V2 | "GuardedBy" == V2 | "NotThreadSafe" == V2 | "ThreadSafe" == V2) )
+
+c <- inner_join(a, b, by = "Node")
+
+c <- c %>% mutate(UseOnlyCoreTypes = ifelse(all == core, "UseCore", ifelse(core == 0, "NoUseCore", "UseBoth"))) %>% select(Node, UseOnlyCoreTypes)
+
+x <- jsr %>% 
+  group_by(V1, V2) %>%
+  count() %>% rename(Node = V1)  
+
+d <- inner_join(c, x, by = "Node") %>% select(UseOnlyCoreTypes, V2)
+
+x <- d %>% 
+  group_by(V2, UseOnlyCoreTypes) %>% 
+  count() 
+
+# doing the plot ---------------------------------------------
+
+df <- data.frame(from = as.character(x$UseOnlyCoreTypes), 
+    to = as.character(x$V2), 
+    value = as.vector(x$n),
+    stringsAsFactors = FALSE)
+
+grid.col = c(
+  UseCore = "red",
+  NoUseCore = "black",
+  UseBoth = "blue",
+  Nullable  = "red",
+  Nonnull  = "red",
+  Immutable  = "red",
+  CheckForNull  = "red",
+  ParametersAreNonnullByDefaul  = "red",
+  CheckReturnValue  = "red",
+  GuardedBy  = "red",
+  NotThreadSafe  = "red",
+  ThreadSafe = "red"
+)
+
+chordDiagram(df, annotationTrack = "grid",  transparency = 0.6, grid.col = grid.col,
+    preAllocateTracks = list(track.height = max(strwidth(unlist(dimnames(df))))))
+
+abline(h = 0, lty = 2, col = "#00000080")
+
+# we go back to the first track and customize sector labels
+circos.track(track.index = 1, panel.fun = function(x, y) {
+    circos.text(CELL_META$xcenter, CELL_META$ylim[1], CELL_META$sector.index, 
+        facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+}, bg.border = NA) # here set bg.border to NA is important
+
+circos.clear()
+
+View(df)
+```
+
+

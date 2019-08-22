@@ -1,0 +1,103 @@
+---
+title: "Subjects"
+output: html_notebook
+---
+
+### Import required libraries
+
+```{r}
+library(tidyverse)
+library(latex2exp)
+library(scales)
+library(caret)
+library(extrafont)
+
+# set fonts
+loadfonts(device = "pdf")
+# font_import()
+# link www.fontsquirrel.com/fonts/latin-modern-roman
+# execute once to add fonts:
+font_import(pattern = "lmroman*")
+# set ggplot 
+theme_set(theme_bw())
+```
+
+### Read the data 
+
+```{r}
+data <- read_csv("Data/data.csv")
+```
+
+### Select artifacts released in 2018 with distinct GroupId and ArtifactId, with at least one dependency and at least one client
+
+```{r}
+df <- data %>% 
+  select(GroupId, ArtifactId, Version, Release, DUsages, Dependencies) %>% 
+  filter(Dependencies > 0, DUsages > 0, Release > "2018-01-01") %>% 
+  distinct(GroupId,ArtifactId, .keep_all= T) %>% 
+  arrange(desc(Release), desc(DUsages))
+
+df %>% ggplot(aes(x = "Artifact", y = Dependencies)) +
+  geom_violin() + 
+  geom_boxplot()
+```
+
+### Get a representative subsample of the artifacts
+
+```{r}
+df_sample <- df %>% 
+  mutate(Coordinates = paste(paste(GroupId, ArtifactId, sep = ":"), Version, sep = ":")) %>% 
+  select(Coordinates, Dependencies)
+
+df_sample$Coordinates <- as.factor(df_sample$Coordinates)
+df_sample$Dependencies <- as.factor(df_sample$Dependencies)
+
+set.seed(1)
+inside <-
+  ave(
+    seq_along(df_sample$Dependencies),
+    df_sample$Dependencies,
+    FUN = function(x)
+      sample(length(x))
+  )
+
+outside <- ave(
+  inside,
+  inside,
+  FUN = function(x)
+    sample(seq_along(x))
+)
+
+# get a subsample of the artifacts
+df_sample <- df_sample[order(inside, outside), ]  %>% 
+  slice(1:15000) 
+
+df_sample$Dependencies <- as.numeric(df_sample$Dependencies)
+summary(df_sample)
+
+summary(df_sample)
+dim(df_sample)
+View(df_sample)
+
+df_sample %>% ggplot(aes(x = "Libraries", y = Dependencies)) +
+  geom_violin(fill = "#f7f7f7ff") +
+  xlab("") +
+  ylab("#Direct dependencies") +
+  geom_boxplot(width=0.1) +
+  coord_flip() +
+  theme(legend.position = "top", text=element_text(size=16, family="LM Roman 10"))
+
+ggsave(filename = "Figures/distribution.pdf", 
+       height = 2, width = 8,  units = c("in"), device = "pdf")
+
+summary(df_sample$Dependencies)
+```
+
+Save artifacts coordinates to local file
+
+```{r}
+df_sample <- df_sample %>% select(Coordinates)
+write.csv(df_sample, file = "/home/cesarsv/Documents/df_sample15000.csv", col.names = FALSE, row.names = F, quote = F)
+```
+
+
