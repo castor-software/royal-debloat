@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This Maven mojo instruments the project according to an entry point given as parameters in its configuration.
+ * This Maven mojo instruments the project according to an entry point provided as parameters in Maven configuration.
  * Probes are inserted in order to keep track of the classes and methods used.
- * Non covered elements are removed from the final jar file.
+ * Non covered elements are removed from the final bundled jar file.
  */
 @Mojo(name = "entry-point-debloat", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, threadSafe = true)
 public class EntryPointDebloatMojo extends AbstractMojo {

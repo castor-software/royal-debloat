@@ -100,7 +100,9 @@ public class FileUtils {
                     // get the current directory
                     File parent = new File(classFile.getParent());
                     // remove the file
-                    LOGGER.info("Removing unused class: " + currentClassName);
+//                    LOGGER.info("Removing unused class: " + currentClassName);
+
+
                     Files.delete(classFile.toPath());
                     nbClassesRemoved++;
                     // remove the parent folder if is empty

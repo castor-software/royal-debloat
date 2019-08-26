@@ -46,7 +46,7 @@ public class ConservativeDebloatMojo extends AbstractMojo {
         String outputDirectory = project.getBuild().getOutputDirectory();
         File baseDir = project.getBasedir();
 
-        getLog().info("***** STARTING CONSERVATIVE_DEBLOAT DEBLOAT *****");
+        getLog().info("***** STARTING CONSERVATIVE DEBLOAT *****");
 
         MavenUtils mavenUtils = new MavenUtils(mavenHome, baseDir);
 
@@ -65,6 +65,13 @@ public class ConservativeDebloatMojo extends AbstractMojo {
         Map<String, Set<String>> usageAnalysis = jCallGraphModified.runUsageAnalysis(project.getBuild().getOutputDirectory());
         Set<String> classesUsed = usageAnalysis.keySet();
 
+
+        getLog().info("#Total classes: " + usageAnalysis.entrySet().stream().count());
+        getLog().info("#Unused classes: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() == null).count());
+
+//        getLog().info("#Total methods: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() != null).count());
+        getLog().info("#Unused methods: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() != null).map(Map.Entry::getValue).mapToInt(Set::size).sum());
+
         // delete unused classes
         FileUtils fileUtils = new FileUtils(outputDirectory, new HashSet<>(), classesUsed);
         try {
@@ -81,6 +88,6 @@ public class ConservativeDebloatMojo extends AbstractMojo {
             getLog().error("Error: " + e);
         }
 
-        getLog().info("***** CONSERVATIVE_DEBLOAT DEBLOAT SUCCESS *****");
+        getLog().info("***** CONSERVATIVE_DEBLOAT SUCCESS *****");
     }
 }

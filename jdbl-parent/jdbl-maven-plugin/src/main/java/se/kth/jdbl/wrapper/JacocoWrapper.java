@@ -23,16 +23,13 @@ public class JacocoWrapper {
     //------------------------------/
 
     private static final Logger LOGGER = LogManager.getLogger(JacocoWrapper.class.getName());
-
     private MavenProject mavenProject;
-
     private String entryClass;
     private String entryMethod;
     private String entryParameters;
-
+    private List<String> tests;
     private File mavenHome;
     private File report;
-
     private DebloatTypeEnum debloatTypeEnum;
 
     //--------------------------------/
@@ -43,7 +40,7 @@ public class JacocoWrapper {
         this.mavenProject = mavenProject;
         this.report = report;
         this.debloatTypeEnum = debloatTypeEnum;
-
+        this.tests = new ArrayList<>();
         if (report.exists()) {
             FileUtils.deleteQuietly(report);
         }
@@ -57,7 +54,6 @@ public class JacocoWrapper {
         this.entryMethod = entryMethod;
         this.entryParameters = entryParameters;
         this.mavenHome = mavenHome;
-
         if (report.exists()) {
             FileUtils.deleteQuietly(report);
         }
@@ -88,29 +84,40 @@ public class JacocoWrapper {
 
         switch (debloatTypeEnum) {
             case TEST_DEBLOAT:
-                mavenUtils.runMaven(Collections.singletonList("test"), null);
+                // add jacoco to the classpath
+                String classpathTest = addJacocoToClasspath(mavenProject.getBasedir().getAbsolutePath() + "/target/test-classpath");
+                // collect test classes
+                StringBuilder entryParametersTest = new StringBuilder();
+                for (String test : findTestFiles(mavenProject.getBuild().getTestOutputDirectory())) {
+                    StringBuilder testSb = new StringBuilder(test);
+                    entryParametersTest.append(testSb.append(" "));
+                }
+                // execute all the tests classes
+                CmdExec cmdExecTestDebloat = new CmdExec();
+                Set<String> classesLoadedTestDebloat = cmdExecTestDebloat.execProcess(
+                        classpathTest + ":" + mavenProject.getBuild().getOutputDirectory() + ":" + mavenProject.getBuild().getTestOutputDirectory(),
+                        "org.junit.runner.JUnitCore",
+                        entryParametersTest.toString().split(" "));
+                // print info about the number of classes loaded
+                LOGGER.info("Number of classes loaded: " + classesLoadedTestDebloat.size());
+                ClassesLoadedSingleton.INSTANCE.setClassesLoaded(classesLoadedTestDebloat);
+                // list the classes loaded
+                ClassesLoadedSingleton.INSTANCE.printClassesLoaded();
                 break;
             case ENTRY_POINT_DEBLOAT:
-                CmdExec cmdExec = new CmdExec();
                 LOGGER.info("Output directory: " + mavenProject.getBuild().getOutputDirectory());
                 LOGGER.info("entryClass: " + entryClass);
                 LOGGER.info("entryParameters: " + entryParameters);
-
-                System.out.println("starting execution");
-
                 // add jacoco to the classpath
                 String classpath = addJacocoToClasspath(mavenProject.getBasedir().getAbsolutePath() + "/target/test-classpath");
-
                 // execute the application from entry point
-                Set<String> classesLoaded = cmdExec.execProcess(classpath, entryClass, entryParameters.split(" "));
-
-                System.out.println("Number of classes loaded: " + classesLoaded.size());
-
+                CmdExec cmdExecEntryPoint = new CmdExec();
+                Set<String> classesLoaded = cmdExecEntryPoint.execProcess(classpath, entryClass, entryParameters.split(" "));
+                // print info about the number of classes loaded
+                LOGGER.info("Number of classes loaded: " + classesLoaded.size());
                 ClassesLoadedSingleton.INSTANCE.setClassesLoaded(classesLoaded);
-
                 // list the classes loaded
                 ClassesLoadedSingleton.INSTANCE.printClassesLoaded();
-
                 break;
             case CONSERVATIVE_DEBLOAT:
                 // TODO implement the conservative approach
@@ -146,28 +153,29 @@ public class JacocoWrapper {
         return rawFile.toString();
     }
 
-//    private URLClassLoader createClassLoader(File in) throws IOException {
-//        BufferedReader buffer = new BufferedReader(new FileReader(in));
-//        StringBuilder rawFile = new StringBuilder(mavenProject.getBasedir().getAbsolutePath() + "/target/classes/:");
-//        String line;
-//        while ((line = buffer.readLine()) != null) {
-//            rawFile.append(line);
-//        }
-//        URL[] urls = Arrays.stream(rawFile.toString().split(":"))
-//                .map(str -> {
-//                    try {
-//                        return new URL("file://" + str);
-//                    } catch (MalformedURLException e) {
-//                        LOGGER.error("failed to add to classpath: " + str);
-//                        return null;
-//                    }
-//                })
-//                .filter(Objects::nonNull)
-//                .toArray(URL[]::new);
-//
-//        for (URL url : urls) {
-//            LOGGER.info("url: " + url.getPath());
-//        }
-//        return new URLClassLoader(urls);
-//    }
+    /**
+     * Recursively search for class files in a directory.
+     *
+     * @param testOutputDirectory
+     * @return the name of tests files present in a given directory.
+     */
+    private List<String> findTestFiles(String testOutputDirectory) {
+
+        File f = new File(testOutputDirectory);
+        File[] list = f.listFiles();
+        assert list != null;
+        for (File testFile : list) {
+            if (testFile.isDirectory()) {
+                findTestFiles(testFile.getAbsolutePath());
+            } else if (testFile.getName().endsWith(".class")) {
+                String testName = testFile.getAbsolutePath();
+                // Get the binary name of the test file
+                System.out.println("added tests: " + testName);
+
+                tests.add(testName.replaceAll("/", ".")
+                        .substring(mavenProject.getBuild().getTestOutputDirectory().length() + 1, testName.length() - 6));
+            }
+        }
+        return tests;
+    }
 }

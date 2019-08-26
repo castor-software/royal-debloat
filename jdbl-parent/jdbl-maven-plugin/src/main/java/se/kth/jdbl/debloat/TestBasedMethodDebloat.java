@@ -39,7 +39,7 @@ public class TestBasedMethodDebloat extends AbstractMethodDebloat {
                 MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
 
                 if (usedMethods.contains(name + desc)) {
-                    LOGGER.info("Removed unused method: " + name + desc + " in class ==> " + clazz);
+//                    LOGGER.info("Removed unused method: " + name + desc + " in class ==> " + clazz);
                     return new MethodExceptionThrower(mv);
                     // return null;
                 }

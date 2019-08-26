@@ -2,16 +2,16 @@ package se.kth.jdbl.debloat;
 
 //import org.junit.Before;
 //import org.xml.sax.SAXException;
-//import se.kth.jdbl.util.JarUtils;
+//import se.kth.jdbl.se.kth.jdbl.util.JarUtils;
 //import se.kth.jdbl.wrapper.DebloatTypeEnum;
 //import se.kth.jdbl.wrapper.JacocoWrapper;
 //
 //import javax.xml.parsers.ParserConfigurationException;
 //import java.io.File;
 //import java.io.IOException;
-//import java.util.HashSet;
-//import java.util.Map;
-//import java.util.Set;
+//import java.se.kth.jdbl.util.HashSet;
+//import java.se.kth.jdbl.util.Map;
+//import java.se.kth.jdbl.util.Set;
 //
 //public class MethodDebloaterTest {
 //
