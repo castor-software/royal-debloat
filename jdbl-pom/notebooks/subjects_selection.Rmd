@@ -18,26 +18,28 @@ loadfonts(device = "pdf")
 # link www.fontsquirrel.com/fonts/latin-modern-roman
 # execute once to add fonts:
 font_import(pattern = "lmroman*")
-# set ggplot 
-theme_set(theme_bw())
+# set ggplot global theme
+theme_set(theme_bw() +
+            theme(legend.position = "top") +
+            theme(text = element_text(size = 16, family = "LM Roman 10")))
 ```
 
 ### Read the data 
 
-```{r}
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 data <- read_csv("Data/data.csv")
 ```
 
 ### Select artifacts released in 2018 with distinct GroupId and ArtifactId, with at least one dependency and at least one client
 
 ```{r}
-df <- data %>% 
-  select(GroupId, ArtifactId, Version, Release, DUsages, Dependencies) %>% 
-  filter(Dependencies > 0, DUsages > 0, Release > "2018-01-01") %>% 
-  distinct(GroupId,ArtifactId, .keep_all= T) %>% 
+df <- data %>%
+  select(GroupId, ArtifactId, Version, Release, DUsages, Dependencies) %>%
+  filter(Dependencies > 1, DUsages > 1, Release > "2018-01-01") %>%
+  distinct(GroupId, ArtifactId, .keep_all = T) %>%
   arrange(desc(Release), desc(DUsages))
 
-df %>% ggplot(aes(x = "Artifact", y = Dependencies)) +
+  df %>% ggplot(aes(x = "Artifact", y = Dependencies)) +
   geom_violin() + 
   geom_boxplot()
 ```
@@ -70,7 +72,7 @@ outside <- ave(
 
 # get a subsample of the artifacts
 df_sample <- df_sample[order(inside, outside), ]  %>% 
-  slice(1:15000) 
+  slice(1:10000) 
 
 df_sample$Dependencies <- as.numeric(df_sample$Dependencies)
 summary(df_sample)
@@ -97,7 +99,7 @@ Save artifacts coordinates to local file
 
 ```{r}
 df_sample <- df_sample %>% select(Coordinates)
-write.csv(df_sample, file = "/home/cesarsv/Documents/df_sample15000.csv", col.names = FALSE, row.names = F, quote = F)
+write.csv(new_df_sample, file = "/home/cesarsv/Documents/additional_df_sample15000.csv", col.names = FALSE, row.names = F, quote = F)
 ```
 
 
