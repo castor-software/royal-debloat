@@ -12,6 +12,10 @@ public class MavenDependencyBuilder {
     private String dependencyType;
     private String inConflict;
 
+    private String parent;
+    private String licence;
+    private String organization;
+
     private long nbTypes;
     private long nbFields;
     private long nbMethods;
@@ -104,6 +108,21 @@ public class MavenDependencyBuilder {
         return this;
     }
 
+    public MavenDependencyBuilder setParent(String parent) {
+        this.parent = parent;
+        return this;
+    }
+
+    public MavenDependencyBuilder setLicence(String licence) {
+        this.licence = licence;
+        return this;
+    }
+
+    public MavenDependencyBuilder setOrganization(String organization) {
+        this.organization = organization;
+        return this;
+    }
+
     @Override
     public String toString() {
         return coordinates + "," +
@@ -120,6 +139,9 @@ public class MavenDependencyBuilder {
                 nbAnnotations + "," +
                 nbDependencies + "," +
                 treeLevel + "," +
-                inConflict + "\n";
+                inConflict + "," +
+                parent + "," +
+                licence + "," +
+                organization + "\n";
     }
 }

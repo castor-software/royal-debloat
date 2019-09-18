@@ -29,12 +29,38 @@ public class PomDownloader {
      * @throws IOException
      */
     public static void downloadPom(String artifactDir, String groupId, String artifactId, String version) throws IOException {
-        FileUtils.copyURLToFile(
-                new URL("http://central.maven.org/maven2/" +
+
+        URL url;
+        try {
+            url = new URL("http://central.maven.org/maven2/" +
+                    groupId.replace('.', '/') + "/" +
+                    artifactId + "/" +
+                    version + "/" +
+                    artifactId + "-" + version + ".pom");
+            // download pom from maven repo
+            FileUtils.copyURLToFile(url, new File(artifactDir + "pom.xml"));
+        } catch (Exception a) {
+            try {
+                url = new URL("http://repo1.maven.org/maven2/" +
                         groupId.replace('.', '/') + "/" +
                         artifactId + "/" +
                         version + "/" +
-                        artifactId + "-" + version + ".pom"),
-                new File(artifactDir + "pom.xml"));
+                        artifactId + "-" + version + ".pom");
+                // download pom from maven repo
+                FileUtils.copyURLToFile(url, new File(artifactDir + "pom.xml"));
+            } catch (Exception b) {
+                try {
+                    url = new URL("https://repo.maven.apache.org/maven2/" +
+                            groupId.replace('.', '/') + "/" +
+                            artifactId + "/" +
+                            version + "/" +
+                            artifactId + "-" + version + ".pom");
+                    // download pom from maven repo
+                    FileUtils.copyURLToFile(url, new File(artifactDir + "pom.xml"));
+                } catch (Exception d) {
+                    throw d;
+                }
+            }
+        }
     }
 }

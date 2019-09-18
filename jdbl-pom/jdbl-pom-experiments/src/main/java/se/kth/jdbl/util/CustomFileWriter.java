@@ -1,7 +1,6 @@
 package se.kth.jdbl.util;
 
 import org.apache.maven.model.*;
-import se.kth.jdbl.counter.ClassMembersVisitorCounter;
 import se.kth.jdbl.tree.StandardTextVisitor;
 import se.kth.jdbl.tree.analysis.DependencyTreeAnalyzer;
 
@@ -20,17 +19,25 @@ public class CustomFileWriter {
     /**
      * Writes a file with descriptive fields of the studied artifacts locally.
      */
-    public static void writeArtifactProperties(String descriptionPath, Model model, String coordinates, DependencyTreeAnalyzer dta, DependencyTreeAnalyzer dtaDebloated) throws IOException {
+    public static void writeArtifactProperties(String descriptionPath, Model model, String coordinates, DependencyTreeAnalyzer dta, DependencyTreeAnalyzer dtaDebloated,
+                                               long nbVisitedTypes, long nbVisitedFields, long nbVisitedMethods, long nbVisitedAnnotations) throws IOException {
         BufferedWriter bw = new BufferedWriter(new FileWriter(descriptionPath, true));
 
         // write coordinates
         bw.write(coordinates + ",");
 
         // write static analysis stats
-        bw.write(ClassMembersVisitorCounter.getNbVisitedTypes() + "," +
-                ClassMembersVisitorCounter.getNbVisitedFields() + "," +
-                ClassMembersVisitorCounter.getNbVisitedMethods() + "," +
-                ClassMembersVisitorCounter.getNbVisitedAnnotations() + ",");
+        bw.write(nbVisitedTypes + "," +
+                nbVisitedFields + "," +
+                nbVisitedMethods + "," +
+                nbVisitedAnnotations + ",");
+
+        // parent in case of multi module projects
+        String parentCoordinates = "none";
+        if (model.getParent() != null) {
+            parentCoordinates = MavenDependencyUtils.toCoordinates(model.getParent().getGroupId(), model.getParent().getArtifactId(), model.getParent().getVersion());
+        }
+        bw.write(parentCoordinates + ",");
 
         // write organization
         Organization organization = model.getOrganization();
@@ -54,7 +61,7 @@ public class CustomFileWriter {
         CiManagement ciManagement = model.getCiManagement();
         if (ciManagement != null) {
             if (ciManagement.getSystem() != null) {
-                bw.write(ciManagement.getSystem().replaceAll(",", "[comma]").replaceAll("\n", " "));
+                bw.write(ciManagement.getSystem().replaceAll(",", "[comma]").replaceAll("\n", " ") + ",");
             }
         } else {
             bw.write("NA,");
@@ -64,13 +71,6 @@ public class CustomFileWriter {
         List<License> licencesList = model.getLicenses();
         if (!licencesList.isEmpty()) {
             bw.write(licencesList.get(0).getName().replaceAll(",", "[comma]").replaceAll("\n", " ") + ",");
-        } else {
-            bw.write("NA,");
-        }
-
-        // write project description
-        if (model.getDescription() != null) {
-            bw.write(model.getDescription().replaceAll(",", "[comma]").replaceAll("\n", " ") + ",");
         } else {
             bw.write("NA,");
         }

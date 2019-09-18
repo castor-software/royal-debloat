@@ -3,9 +3,8 @@ package se.kth.jdbl;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.SerializationUtils;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.model.Build;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
+import org.apache.maven.model.*;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.shared.test.plugin.BuildTool;
 import org.apache.maven.shared.test.plugin.ProjectTool;
@@ -50,11 +49,12 @@ public class App extends PlexusTestCase {
     //-------------------------------/
 
     public static void main(String[] args) throws Exception {
+
         App app = new App();
         app.setUp();
 
         // read the list of artifacts
-        BufferedReader br = new BufferedReader(new FileReader(new File("/home/cesarsv/Documents/xperiments/df_sample10000.csv")));
+        BufferedReader br = new BufferedReader(new FileReader(new File("/home/cesarsv/Documents/xperiments/accumulo_versions_list.csv")));
 
         // report results files
         String resultsDir = "/home/cesarsv/Documents/xperiments/results/";
@@ -67,8 +67,8 @@ public class App extends PlexusTestCase {
         BufferedWriter bwDescription = new BufferedWriter(new FileWriter(resultsDir + "description.csv", true));
 
         // write csv report headers
-        bwDescription.write("Artifact,NbTypes,NbFields,NbMethods,NbAnnotations,Organization,Scm,Ci,License,Description,HeightOriginalDT,HeightDebloatedDT" + "\n");
-        bwResults.write("Artifact,AllDeps,Pack,Scope,Optional,Type,Used,Declared,Removable,NbTypes,NbFields,NbMethods,NbAnnotations,NbDeps,TreeLevel,InConflict" + "\n");
+        bwDescription.write("Artifact,NbTypes,NbFields,NbMethods,NbAnnotations,IsMultimodule,Organization,Scm,Ci,License,HeightOriginalDT,HeightDebloatedDT" + "\n");
+        bwResults.write("Artifact,AllDeps,Pack,Scope,Optional,Type,Used,Declared,Removable,NbTypes,NbFields,NbMethods,NbAnnotations,NbDeps,TreeLevel,InConflict,IsMultimodule,Licence,Organization" + "\n");
 
         bwResults.close();
         bwDescription.close();
@@ -85,7 +85,8 @@ public class App extends PlexusTestCase {
 
             try {
                 app.execute(groupId, artifactId, version, resultsDir, artifactDir, dependenciesDir);
-            } catch (TestToolsException | ProjectDependencyAnalyzerException | IOException | XmlPullParserException e) {
+            } catch (Exception e) {
+                LOGGER.severe("Error while processing: " + artifact);
                 artifact = br.readLine();
                 continue;
             }
@@ -179,14 +180,14 @@ public class App extends PlexusTestCase {
                     LOGGER.severe("Fail to build Maven project");
                 }
 
-                processDependency(resultsDir, artifactDir, dependenciesDir, coordinates, dependencyTreePath, mavenProject);
+                processDependencies(resultsDir, artifactDir, dependenciesDir, coordinates, dependencyTreePath, mavenProject);
             }
         }
     }
 
-    private void processDependency(String resultsDir, String artifactDir, String dependenciesDir, String coordinates, String dependencyTreePath, MavenProject mavenProject)
+    private void processDependencies(String resultsDir, String artifactDir, String dependenciesDir, String coordinates, String dependencyTreePath, MavenProject mavenProject)
             throws ProjectDependencyAnalyzerException, IOException, XmlPullParserException {
-        if (mavenProject != null) { // the invoke project was build correctly
+        if (mavenProject != null) { // if is not null then the invoked project was build correctly
 
             Build build = new Build();
             build.setDirectory(artifactDir);
@@ -198,166 +199,214 @@ public class App extends PlexusTestCase {
             List<String> allDependencies = dta.getAllDependenciesCanonical(dta.getRootNode());
 
             LOGGER.info("analyzing dependencies usage");
+
             ProjectDependencyAnalysis actualAnalysis = analyzer.analyze(mavenProject);
             actualAnalysis.ignoreNonCompile();
 
-            // used and declared dependencies"
-            Set<Artifact> usedDeclaredDependencies = actualAnalysis.getUsedDeclaredArtifacts();
+            long nbVisitedTypes = ClassMembersVisitorCounter.getNbVisitedTypes();
+            long nbVisitedFields = ClassMembersVisitorCounter.getNbVisitedFields();
+            long nbVisitedMethods = ClassMembersVisitorCounter.getNbVisitedMethods();
+            long nbVisitedAnnotations = ClassMembersVisitorCounter.getNbVisitedAnnotations();
 
-            // used but not undeclared dependencies
-            Set<Artifact> usedUndeclaredDependencies = actualAnalysis.getUsedUndeclaredArtifacts();
+            if (nbVisitedTypes > 0 && nbVisitedMethods > 0) {
 
-            // manipulation of the pom file
-            LOGGER.info("writing artifact description");
-            Model pomModel = PomManipulator.readModel(new File(artifactDir + "pom.xml"));
+                // used and declared dependencies"
+                Set<Artifact> usedDeclaredDependencies = actualAnalysis.getUsedDeclaredArtifacts();
 
-            List<String> artifactsInConflict = new ArrayList<>();
-            ArrayList<MavenDependencyBuilder> dependencies = new ArrayList<>();
+                // used but not undeclared dependencies
+                Set<Artifact> usedUndeclaredDependencies = actualAnalysis.getUsedUndeclaredArtifacts();
 
-            // copy original dependency tree to file
-            FileUtils.copyFile(new File(artifactDir + "dependencyTree.txt"), new File(resultsDir + "trees/" + coordinates + "_original" + ".txt"));
+                // manipulation of the pom file
+                Model pomModel = PomManipulator.readModel(new File(artifactDir + "pom.xml"));
 
-            // deep copy of the dependency tree object
-            DependencyTreeAnalyzer dtaDebloated = (DependencyTreeAnalyzer) SerializationUtils.clone(dta);
+                List<String> artifactsInConflict = new ArrayList<>();
+                ArrayList<MavenDependencyBuilder> dependencies = new ArrayList<>();
 
-            // label all the nodes
-            dtaDebloated.labelNodes(usedDeclaredDependencies, usedUndeclaredDependencies);
+                // deep copy of the dependency tree object
+                DependencyTreeAnalyzer dtaDebloated = (DependencyTreeAnalyzer) SerializationUtils.clone(dta);
 
-            // remove unused and declared artifacts
-            dtaDebloated.removeUnusedArtifacts();
+                // label all the nodes
+                dtaDebloated.labelNodes(usedDeclaredDependencies, usedUndeclaredDependencies);
 
-            // save to a file
-            StandardTextVisitor dtaDebloatedTree = new StandardTextVisitor();
-            dtaDebloatedTree.visit(dtaDebloated.getRootNode());
-            CustomFileWriter.writeDebloatedPom(dtaDebloatedTree, resultsDir + "trees/" + coordinates + "_debloated" + ".txt");
+                // remove unused and declared artifacts
+                dtaDebloated.removeUnusedArtifacts();
 
-            // write description file
-            CustomFileWriter.writeArtifactProperties(resultsDir + "description.csv", pomModel, coordinates, dta, dtaDebloated);
+                // save to a file
+                StandardTextVisitor dtaDebloatedTree = new StandardTextVisitor();
+                dtaDebloatedTree.visit(dtaDebloated.getRootNode());
 
-            for (String dep : allDependencies) {
+                // process dependencies one by one
+                for (String dep : allDependencies) {
 
-                String inConflict = "NO";
+                    String inConflict = "NO";
 
-                String originalDep = dep;
+                    String originalDep = dep;
 
-                if (dep.startsWith("(")) {
-                    dep = dep.substring(1, dep.length() - 1);
-                    String[] tmpSplit = dep.split(" - ");
-                    dep = tmpSplit[0];
-                    inConflict = tmpSplit[1]
-                            .replace(",", "[comma] ")
-                            .replace(";", "[comma] ");
-                }
-
-                dep = dep.split(" ")[0];// manage the case "junit:junit:3.8.1:test (scope not updated to compile)"
-                String[] split = dep.split(":");
-                String g;
-                String a;
-                String t;
-                String v;
-                String s;
-                g = split[0];
-                if (split.length == 5) {
-                    a = split[1];
-                    t = split[2];
-                    v = split[3];
-                    s = split[4].split(" ")[0];
-                } else { // consider the case org.jacoco:org.jacoco.agent:jar:runtime:0.7.5.201505241946:test
-                    a = split[1];
-                    t = split[3];
-                    v = split[4];
-                    s = split[5].split(" ")[0];
-                }
-
-                boolean isOptional = false;
-                boolean isUsed = false;
-                boolean isDeclared = false;
-
-                for (Artifact usedDeclaredDependency : usedDeclaredDependencies) {
-                    if (usedDeclaredDependency.toString().equals(dep)) {
-                        isUsed = true;
-                        isOptional = usedDeclaredDependency.isOptional();
-                        break;
+                    if (dep.startsWith("(")) {
+                        dep = dep.substring(1, dep.length() - 1);
+                        String[] tmpSplit = dep.split(" - ");
+                        dep = tmpSplit[0];
+                        inConflict = tmpSplit[1]
+                                .replace(",", "[comma] ")
+                                .replace(";", "[comma] ");
                     }
-                }
 
-                for (Artifact usedUndeclaredDependency : usedUndeclaredDependencies) {
-                    if (usedUndeclaredDependency.toString().equals(dep)) {
-                        isUsed = true;
-                        isOptional = usedUndeclaredDependency.isOptional();
-                        break;
+                    dep = dep.split(" ")[0];// manage the case "junit:junit:3.8.1:test (scope not updated to compile)"
+                    String[] split = dep.split(":");
+                    String g;
+                    String a;
+                    String t;
+                    String v;
+                    String s;
+                    g = split[0];
+                    if (split.length == 5) {
+                        a = split[1];
+                        t = split[2];
+                        v = split[3];
+                        s = split[4].split(" ")[0];
+                    } else { // consider the case org.jacoco:org.jacoco.agent:jar:runtime:0.7.5.201505241946:test
+                        a = split[1];
+                        t = split[3];
+                        v = split[4];
+                        s = split[5].split(" ")[0];
                     }
-                }
 
-                List<Dependency> declaredDeps = pomModel.getDependencies();
-                for (Dependency declaredDep : declaredDeps) {
-                    if (declaredDep.getGroupId().equals(g) &&
-                            declaredDep.getArtifactId().equals(a)) {
-                        isDeclared = true;
-                        break;
+                    boolean isOptional = false;
+                    boolean isUsed = false;
+                    boolean isDeclared = false;
+
+                    for (Artifact usedDeclaredDependency : usedDeclaredDependencies) {
+                        if (usedDeclaredDependency.toString().equals(dep)) {
+                            isUsed = true;
+                            isOptional = usedDeclaredDependency.isOptional();
+                            break;
+                        }
                     }
-                }
 
-                // count bytecode class members
-                ClassMembersVisitorCounter.resetClassCounters();
-                File file;
-                if (split.length == 5) {
-                    file = new File(dependenciesDir + "/" +
-                            g.replace(".", "/") + "/" +
-                            a + "/" +
-                            v + "/" +
-                            a + "-" +
-                            v + ".jar");
-                } else { // consider the case org.jacoco:org.jacoco.agent:jar:runtime:0.7.5.201505241946:test
-                    file = new File(dependenciesDir + "/" +
-                            g.replace(".", "/") + "/" +
-                            a + "/" +
-                            v + "/" +
-                            a + "-" +
-                            v + "-" + t + ".jar");
-                }
-                if (file.exists()) {
-                    URL url = file.toURI().toURL();
-                    try {
-                        ClassFileVisitorUtils.accept(url, new DependencyClassFileVisitor());
-                    } catch (Exception e) {
+                    for (Artifact usedUndeclaredDependency : usedUndeclaredDependencies) {
+                        if (usedUndeclaredDependency.toString().equals(dep)) {
+                            isUsed = true;
+                            isOptional = usedUndeclaredDependency.isOptional();
+                            break;
+                        }
+                    }
+
+                    List<Dependency> declaredDeps = pomModel.getDependencies();
+                    for (Dependency declaredDep : declaredDeps) {
+                        if (declaredDep.getGroupId().equals(g) &&
+                                declaredDep.getArtifactId().equals(a)) {
+                            isDeclared = true;
+                            break;
+                        }
+                    }
+
+                    // count bytecode class members
+                    ClassMembersVisitorCounter.resetClassCounters();
+                    File file;
+                    if (split.length == 5) {
+                        file = new File(dependenciesDir + "/" +
+                                g.replace(".", "/") + "/" +
+                                a + "/" +
+                                v + "/" +
+                                a + "-" +
+                                v + ".jar");
+                    } else { // consider the case org.jacoco:org.jacoco.agent:jar:runtime:0.7.5.201505241946:test
+                        file = new File(dependenciesDir + "/" +
+                                g.replace(".", "/") + "/" +
+                                a + "/" +
+                                v + "/" +
+                                a + "-" +
+                                v + "-" + t + ".jar");
+                    }
+                    if (file.exists()) {
+                        URL url = file.toURI().toURL();
+                        try {
+                            ClassFileVisitorUtils.accept(url, new DependencyClassFileVisitor());
+                        } catch (Exception e) {
+                            ClassMembersVisitorCounter.markAsNotFoundClassCounters();
+                            LOGGER.log(Level.WARNING, "Something was wrong with: " + file.getAbsolutePath());
+                        }
+                    } else {
                         ClassMembersVisitorCounter.markAsNotFoundClassCounters();
-                        LOGGER.log(Level.WARNING, "Something was wrong with: " + file.getAbsolutePath());
                     }
-                } else {
-                    ClassMembersVisitorCounter.markAsNotFoundClassCounters();
+
+                    if (!inConflict.equals("NO")) {
+                        artifactsInConflict.add(g + ":" + a + ":" + v);
+                    }
+
+                    // get the dependency POM
+                    try {
+                        String depPomPath = file.getAbsolutePath().substring(0, file.getAbsolutePath().length() - 4) + ".pom";
+                        FileUtils.copyFile(new File(depPomPath), new File(artifactDir + "dependencyPom/pom.xml"));
+                    } catch (IOException e) {
+                        LOGGER.severe("Unable to get POM for dependency: " + g + ":" + a + ":" + v);
+                    }
+
+                    // get extra information from the dependency POM
+                    MavenXpp3Reader reader = new MavenXpp3Reader();
+                    Model model = reader.read(new FileReader(artifactDir + "dependencyPom/" + "pom.xml"));
+
+                    // set parent in case of multi module projects
+                    String parentCoordinates = "none";
+                    if (model.getParent() != null) {
+                        parentCoordinates = MavenDependencyUtils.toCoordinates(model.getParent().getGroupId(), model.getParent().getArtifactId(), model.getParent().getVersion());
+                    }
+
+                    // set organization
+                    Organization organizationObject = model.getOrganization();
+                    String organization = "NA";
+                    if (organizationObject != null && organizationObject.getName() != null) {
+                        organization = organizationObject.getName().replaceAll(",", "[comma]").replaceAll("\n", " ");
+                    }
+
+                    // set licence
+                    List<License> licencesList = model.getLicenses();
+                    String licence = "NA";
+                    if (!licencesList.isEmpty() && licencesList.get(0).getName() != null) {
+                        licence = licencesList.get(0).getName().replaceAll(",", "[comma]").replaceAll("\n", " ");
+                    }
+
+                    MavenDependencyBuilder dependency = new MavenDependencyBuilder();
+                    dependency
+                            .setCoordinates(g + ":" + a + ":" + v)
+                            .setType(t)
+                            .setScope(s)
+                            .isOptional(isOptional)
+                            .setDependencyType((directDependencies.contains(originalDep)) ? "direct" : "transitive")
+                            .isUsed(isUsed)
+                            .isDeclared(isDeclared)
+                            .isRemovable(!dtaDebloated.getAllDependenciesCoordinates(dtaDebloated.getRootNode()).contains(g + ":" + a + ":" + v))
+                            .setTreeLevel(dta.getLevel(g, a, v))
+                            .setNbTypes(ClassMembersVisitorCounter.getNbVisitedTypes())
+                            .setNbFields(ClassMembersVisitorCounter.getNbVisitedFields())
+                            .setNbMethods(ClassMembersVisitorCounter.getNbVisitedMethods())
+                            .setNbAnnotations(ClassMembersVisitorCounter.getNbVisitedAnnotations())
+                            .setNbDependencies(dta.getNumberOfDependenciesOfNode(g, a, v))
+                            .inConflict(inConflict)
+                            .setParent(parentCoordinates)
+                            .setLicence(licence)
+                            .setOrganization(organization);
+                    // add dependencies to the data
+                    dependencies.add(dependency);
                 }
 
-                if (!inConflict.equals("NO")) {
-                    artifactsInConflict.add(g + ":" + a + ":" + v);
-                }
+                // ********   Only happens if no exception occurred before *********** //
 
-                MavenDependencyBuilder dependency = new MavenDependencyBuilder();
-                dependency
-                        .setCoordinates(g + ":" + a + ":" + v)
-                        .setType(t)
-                        .setScope(s)
-                        .isOptional(isOptional)
-                        .setDependencyType((directDependencies.contains(originalDep)) ? "direct" : "transitive")
-                        .isUsed(isUsed)
-                        .isDeclared(isDeclared)
-                        .isRemovable(!dtaDebloated.getAllDependenciesCoordinates(dtaDebloated.getRootNode()).contains(g + ":" + a + ":" + v))
-                        .setTreeLevel(dta.getLevel(g, a, v))
-                        .setNbTypes(ClassMembersVisitorCounter.getNbVisitedTypes())
-                        .setNbFields(ClassMembersVisitorCounter.getNbVisitedFields())
-                        .setNbMethods(ClassMembersVisitorCounter.getNbVisitedMethods())
-                        .setNbAnnotations(ClassMembersVisitorCounter.getNbVisitedAnnotations())
-                        .setNbDependencies(dta.getNumberOfDependenciesOfNode(g, a, v))
-                        .inConflict(inConflict);
-                dependencies.add(dependency);
+                LOGGER.info("writing artifact description and results for ===================> " + coordinates);
+
+                // write description file
+                CustomFileWriter.writeArtifactProperties(resultsDir + "description.csv", pomModel, coordinates, dta, dtaDebloated,
+                        nbVisitedTypes, nbVisitedFields, nbVisitedMethods, nbVisitedAnnotations);
+
+                // write results file
+                CustomFileWriter.writeDependencyResults(resultsDir + "results.csv", coordinates, dependencies);
+
+                // writing original DT
+                FileUtils.copyFile(new File(artifactDir + "dependencyTree.txt"), new File(resultsDir + "trees/" + coordinates + "_original" + ".txt"));
+
+                // writing debloated DT
+                CustomFileWriter.writeDebloatedPom(dtaDebloatedTree, resultsDir + "trees/" + coordinates + "_debloated" + ".txt");
             }
-
-            // save results to file
-            LOGGER.info("writing artifact dependencies info ");
-            CustomFileWriter.writeDependencyResults(resultsDir + "results.csv",
-                    coordinates,
-                    dependencies);
-
         }
     }
 

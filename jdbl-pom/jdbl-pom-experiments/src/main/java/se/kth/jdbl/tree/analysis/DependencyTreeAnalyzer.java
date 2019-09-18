@@ -32,9 +32,7 @@ public class DependencyTreeAnalyzer implements Serializable {
             Reader r = new BufferedReader(new InputStreamReader(new FileInputStream(dependencyTreeFile), "UTF-8"));
             Parser parser = type.newParser();
             rootNode = parser.parse(r);
-        } catch (ParseException | FileNotFoundException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
+        } catch (ParseException | FileNotFoundException | UnsupportedEncodingException e) {}
     }
 
     //-------------------------------/
