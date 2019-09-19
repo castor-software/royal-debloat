@@ -18,12 +18,16 @@ Given a list of coordinates (GAVs) of Maven artifacts, `jdbl-pom-experiments` al
 
 ### Usage
 
-Pull the docker image:
+Pull the docker image from DockeHub:
 
 ```bash
-docker pull 
+docker pull cesarsotovalero/jdbl-pom-exp
 ```
+Then run the container:
 
+```bash
+docker run -d --name jdbl-pom -v [dir to local file]:/xperiments cesarsotovalero/jdbl-pom-exp
+```
 
 ## Installing and building from source code
 
