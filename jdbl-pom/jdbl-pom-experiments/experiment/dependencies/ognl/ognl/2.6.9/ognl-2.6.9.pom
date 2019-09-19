@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>ognl</groupId>
+	<artifactId>ognl</artifactId>
+	<version>2.6.9</version>
+	<packaging>jar</packaging>
+	<name>OGNL</name>
+	<description>OGNL stands for Object-Graph Navigation Language; it is an expression language for getting and setting properties of Java objects.</description>
+	<url>http://www.ognl.org/</url>
+
+	<licenses>
+		<license>
+			<name>BSD License</name>
+			<url>http://www.opensource.org/licenses/bsd-license.php</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+</project>

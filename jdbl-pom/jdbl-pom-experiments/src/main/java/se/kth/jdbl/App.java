@@ -41,6 +41,16 @@ public class App extends PlexusTestCase {
     private static File localRepo;
     private static ProjectTool projectTool;
     private static ProjectDependencyAnalyzer analyzer;
+    private static String dependenciesDir;
+
+    private static void printHelp() {
+        System.out.println("Usage:");
+        System.out.println("\t arg[0]: Path to file containing a list of GAVs");
+        System.out.println("\t arg[1]: Path to directory to put the dependencies");
+        System.out.println("\t arg[2]: Path to directory to put the results");
+        System.out.println("\t arg[3]: Path to temporal directory used for analysis");
+        System.out.println("\t arg[4]: r flag to restart the analysis form the last processed artifact");
+    }
 
     private static final Logger LOGGER = Logger.getLogger(App.class.getName());
 
@@ -50,49 +60,96 @@ public class App extends PlexusTestCase {
 
     public static void main(String[] args) throws Exception {
 
+        if (args[0].equals("-help")) {
+            printHelp();
+            System.exit(1);
+        }
+
+        dependenciesDir = args[1];
+
         App app = new App();
         app.setUp();
 
-        // read the list of artifacts
-        BufferedReader br = new BufferedReader(new FileReader(new File("/home/cesarsv/Documents/xperiments/accumulo_versions_list.csv")));
+        // read the list of artifacts: "/home/cesarsv/Documents/xperiments/accumulo_versions_list.csv"
+        BufferedReader br = new BufferedReader(new FileReader(new File(args[0])));
 
-        // report results files
-        String resultsDir = "/home/cesarsv/Documents/xperiments/results/";
+        // directory to put the results files: "/home/cesarsv/Documents/xperiments/results/"
+        String resultsDir = args[2];
 
-        // directories to put the artifact and its dependencies
-        String artifactDir = "/home/cesarsv/Documents/xperiments/artifact/";
+        // temporal directory to put the artifact and its dependencies: "/home/cesarsv/Documents/xperiments/artifact/"
+        String artifactDir = args[3];
         String dependenciesDir = localRepo.getAbsolutePath();
 
         BufferedWriter bwResults = new BufferedWriter(new FileWriter(resultsDir + "results.csv", true));
         BufferedWriter bwDescription = new BufferedWriter(new FileWriter(resultsDir + "description.csv", true));
 
-        // write csv report headers
-        bwDescription.write("Artifact,NbTypes,NbFields,NbMethods,NbAnnotations,IsMultimodule,Organization,Scm,Ci,License,HeightOriginalDT,HeightDebloatedDT" + "\n");
-        bwResults.write("Artifact,AllDeps,Pack,Scope,Optional,Type,Used,Declared,Removable,NbTypes,NbFields,NbMethods,NbAnnotations,NbDeps,TreeLevel,InConflict,IsMultimodule,Licence,Organization" + "\n");
+        // option to restart the experiments
+        if (args.length == 5 && args[4].equals("r")) {
+            LOGGER.info("RESTARTING EXPERIMENTS FROM THE LAST PROCESSED ARTIFACT");
 
-        bwResults.close();
-        bwDescription.close();
+            // read the last processed artifact
+            BufferedReader brLastProcessed = new BufferedReader(new FileReader(new File(resultsDir + "lastProcessed.txt")));
+            String lastProcessedArtifact = brLastProcessed.readLine().split(",")[0];
+            brLastProcessed.close();
 
-        String artifact = br.readLine();
-
-        // read the list of artifacts' coordinates to be analyzed
-        while (artifact != null) {
-//            artifact = artifact.substring(1, artifact.length() - 1);
-            String[] split = artifact.split(":");
-            String groupId = split[0];
-            String artifactId = split[1];
-            String version = split[2];
-
-            try {
-                app.execute(groupId, artifactId, version, resultsDir, artifactDir, dependenciesDir);
-            } catch (Exception e) {
-                LOGGER.severe("Error while processing: " + artifact);
+            String artifact = "";
+            while (!(artifact.equals(lastProcessedArtifact))) {
                 artifact = br.readLine();
-                continue;
             }
+
+            //read the next unprocessed artifact
             artifact = br.readLine();
+
+            // read the list of artifacts' coordinates to be analyzed
+            while (artifact != null) {
+                String[] split = artifact.split(":");
+                String groupId = split[0];
+                String artifactId = split[1];
+                String version = split[2];
+                try {
+                    app.execute(groupId, artifactId, version, resultsDir, artifactDir, dependenciesDir);
+                } catch (Exception e) {
+                    LOGGER.severe("Error while processing: " + artifact);
+                    artifact = br.readLine();
+                    continue;
+                }
+                artifact = br.readLine();
+            }
+            br.close();
+
+        } else if (args.length == 4) {
+            // write csv report headers
+            bwDescription.write("Artifact,NbTypes,NbFields,NbMethods,NbAnnotations,IsMultimodule,Organization,Scm,License,HeightOriginalDT,HeightDebloatedDT" + "\n");
+            bwResults.write("Artifact,AllDeps,Pack,Scope,Optional,Type,Used,Declared,Removable,NbTypes,NbFields,NbMethods,NbAnnotations,NbDeps,TreeLevel,InConflict,IsMultimodule,Licence,Organization" + "\n");
+            bwResults.close();
+            bwDescription.close();
+
+            String artifact = br.readLine();
+            // read the list of artifacts' coordinates to be analyzed
+            while (artifact != null) {
+//            artifact = artifact.substring(1, artifact.length() - 1);
+                String[] split = artifact.split(":");
+                String groupId = split[0];
+                String artifactId = split[1];
+                String version = split[2];
+
+                BufferedWriter bwLastProcessed = new BufferedWriter(new FileWriter(resultsDir + "lastProcessed.txt"));
+                bwLastProcessed.write(artifact);
+                bwLastProcessed.close();
+
+                try {
+                    app.execute(groupId, artifactId, version, resultsDir, artifactDir, dependenciesDir);
+                } catch (Exception e) {
+                    LOGGER.severe("Error while processing: " + artifact);
+                    artifact = br.readLine();
+                    continue;
+                }
+                artifact = br.readLine();
+            }
+            br.close();
+
         }
-        br.close();
+
     }
 
     public static BuildTool getBuildTool() {
@@ -114,12 +171,13 @@ public class App extends PlexusTestCase {
         projectTool = (ProjectTool) lookup(ProjectTool.ROLE);
         analyzer = (ProjectDependencyAnalyzer) lookup(ProjectDependencyAnalyzer.ROLE);
 
-        System.setProperty("maven.home", "/home/cesarsv/Documents/xperiments/dependencies");
+        System.setProperty("maven.home", dependenciesDir);
+
         if (localRepo == null) {
             RepositoryTool repositoryTool = (RepositoryTool) lookup(RepositoryTool.ROLE);
             localRepo = repositoryTool.findLocalRepositoryDirectory();
-            // set a custom local maven repository
-            localRepo = new File("/home/cesarsv/Documents/xperiments/dependencies");
+            // set a custom local maven repository: "/home/cesarsv/Documents/xperiments/dependencies"
+            localRepo = new File(dependenciesDir);
         }
     }
 
@@ -132,7 +190,7 @@ public class App extends PlexusTestCase {
         FileUtils.cleanDirectory(new File(artifactDir));
 
         // set a size threshold of 10GB size (clean it if is larger that that)
-        // checkDependenciesDirSize(dependenciesDir, new BigInteger("53687091200"); // 50GB
+        checkDependenciesDirSize(dependenciesDir, new BigInteger("53687091200")); // 50GB
 
         String coordinates = groupId + ":" + artifactId + ":" + version;
 
@@ -347,9 +405,11 @@ public class App extends PlexusTestCase {
                     Model model = reader.read(new FileReader(artifactDir + "dependencyPom/" + "pom.xml"));
 
                     // set parent in case of multi module projects
-                    String parentCoordinates = "none";
+                    String parentCoordinates = "NO";
                     if (model.getParent() != null) {
-                        parentCoordinates = MavenDependencyUtils.toCoordinates(model.getParent().getGroupId(), model.getParent().getArtifactId(), model.getParent().getVersion());
+//                        parentCoordinates = MavenDependencyUtils.toCoordinates(model.getParent().getGroupId(), model.getParent().getArtifactId(), model.getParent().getVersion());
+                        parentCoordinates = "YES";
+
                     }
 
                     // set organization

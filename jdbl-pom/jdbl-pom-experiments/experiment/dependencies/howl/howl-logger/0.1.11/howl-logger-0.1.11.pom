@@ -1,0 +1,57 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>howl</groupId>
+  <artifactId>howl-logger</artifactId>
+  <version>0.1.11</version>
+  <description>High-speed ObjectWeb Logger</description>
+  <ciManagement>
+    <notifiers>
+      <notifier>
+        <configuration>
+          <address>na</address>
+        </configuration>
+      </notifier>
+    </notifiers>
+  </ciManagement>
+  <developers>
+    <developer>
+      <id></id>
+      <name>Michael Giroux</name>
+      <email></email>
+      <organization></organization>
+    </developer>
+  </developers>
+  <build>
+    <sourceDirectory>src/java</sourceDirectory>
+    <testSourceDirectory>src/test</testSourceDirectory>
+    <resources>
+      <resource>
+        <directory>.</directory>
+        <includes>
+          <include>**/*.properties</include>
+        </includes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
+          <excludes>
+            <exclude>**/allTest.java</exclude>
+            <exclude>**/ExceptionTest.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+    </dependency>
+  </dependencies>
+</project>

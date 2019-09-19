@@ -33,9 +33,10 @@ public class CustomFileWriter {
                 nbVisitedAnnotations + ",");
 
         // parent in case of multi module projects
-        String parentCoordinates = "none";
+        String parentCoordinates = "NO";
         if (model.getParent() != null) {
-            parentCoordinates = MavenDependencyUtils.toCoordinates(model.getParent().getGroupId(), model.getParent().getArtifactId(), model.getParent().getVersion());
+//            parentCoordinates = MavenDependencyUtils.toCoordinates(model.getParent().getGroupId(), model.getParent().getArtifactId(), model.getParent().getVersion());
+            parentCoordinates = "YES";
         }
         bw.write(parentCoordinates + ",");
 
@@ -52,16 +53,6 @@ public class CustomFileWriter {
         if (scm != null) {
             if (scm.getUrl() != null) {
                 bw.write(scm.getUrl().replaceAll(",", "[comma]").replaceAll("\n", " ") + ",");
-            }
-        } else {
-            bw.write("NA,");
-        }
-
-        // write CI management
-        CiManagement ciManagement = model.getCiManagement();
-        if (ciManagement != null) {
-            if (ciManagement.getSystem() != null) {
-                bw.write(ciManagement.getSystem().replaceAll(",", "[comma]").replaceAll("\n", " ") + ",");
             }
         } else {
             bw.write("NA,");

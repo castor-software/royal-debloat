@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Wed Sep 18 15:44:21 UTC 2019
+@legacy-dev.java.net-http\://download.java.net/maven/1/.lastUpdated=1568821461632
+https\://repo.maven.apache.org/maven2/.lastUpdated=1568821461656
+http\://download.java.net/maven/1/.error=Could not transfer artifact org.mortbay.jetty\:jetty-parent\:pom\:3 from/to dev.java.net (http\://download.java.net/maven/1)\: Cannot access http\://download.java.net/maven/1 with type legacy using the available connector factories\: BasicRepositoryConnectorFactory
