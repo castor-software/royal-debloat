@@ -5,7 +5,7 @@ COPY target/jdbl-pom-experiments-0.1.0-SNAPSHOT-jar-with-dependencies.jar /app/j
 ENV MAVEN_HOME=/usr/share/maven
 ENV M2_HOME=/usr/share/maven
 
-CMD ["java", "-jar", "/app/jdbl.jar", "/xperiments/artifacts", "/xperiments/dependencies/", "/xperiments/results/", "/xperiments/artifact/"]
+CMD ["java", "-jar", "-Xmx8g", "-XX:MaxRAM=8g", "/app/jdbl.jar", "/xperiments/artifacts", "/xperiments/dependencies/", "/xperiments/results/", "/xperiments/artifact/",  "r"]
 
 # 1. Build the docker container from the Dockerfile:
 # docker build -t cesarsotovalero/jdbl-pom-exp .
