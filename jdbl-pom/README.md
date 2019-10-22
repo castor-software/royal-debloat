@@ -37,6 +37,7 @@ mvn clean install
 Once the plugin is installed, configure the `pom.xml` file to include it as part of the build of the Maven project:
 
 ```xml
+<!-- Run with mvn se.kth.jdbl:jdbl-pom-maven-plugin:0.1.0-SNAPSHOT:jdbl-pom -->
 <plugin>
     <groupId>se.kth.jdbl</groupId>
     <artifactId>jdbl-pom</artifactId>
@@ -44,7 +45,7 @@ Once the plugin is installed, configure the `pom.xml` file to include it as part
     <executions>
         <execution>
         <goals>
-            <goal>pom-debloat</goal>
+            <goal>jdbl-pom</goal>
         </goals>
         </execution>
     </executions>
