@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * TODO document this
+ * This Maven mojo statically instruments the project and its dependencies in order to remove unused API members.
  */
 @Mojo(name = "conservative-debloat", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, threadSafe = true)
 public class ConservativeDebloatMojo extends AbstractMojo {
@@ -65,11 +65,8 @@ public class ConservativeDebloatMojo extends AbstractMojo {
         Map<String, Set<String>> usageAnalysis = jCallGraphModified.runUsageAnalysis(project.getBuild().getOutputDirectory());
         Set<String> classesUsed = usageAnalysis.keySet();
 
-
         getLog().info("#Total classes: " + usageAnalysis.entrySet().stream().count());
         getLog().info("#Unused classes: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() == null).count());
-
-//        getLog().info("#Total methods: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() != null).count());
         getLog().info("#Unused methods: " + usageAnalysis.entrySet().stream().filter(e -> e.getValue() != null).map(Map.Entry::getValue).mapToInt(Set::size).sum());
 
         // delete unused classes

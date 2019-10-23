@@ -61,6 +61,7 @@ public class EntryPointDebloatMojo extends AbstractMojo {
         String outputDirectory = project.getBuild().getOutputDirectory();
         File baseDir = project.getBasedir();
 
+
         getLog().info("***** STARTING DEBLOAT FROM ENTRY POINT *****");
 
         MavenUtils mavenUtils = new MavenUtils(mavenHome, baseDir);
