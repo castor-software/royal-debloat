@@ -1,9 +1,9 @@
 ---
-title: "R Notebook"
+title: "Data analysis to answer the research questions"
 output: html_notebook
 ---
 
-### Import required data and libraries
+Import required data and libraries
 
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 # clear the R environment
@@ -22,7 +22,7 @@ library(gtable)
 # set fonts
 loadfonts(device = "pdf")
 # font_import()
-# link www.fontsquirrel.com/fonts/latin-modern-roman
+# link www.fontsquirrel.com/fonts/latin-modern-roman  
 
 # execute once to add fonts:
 # font_import(pattern = "lmroman*")
@@ -45,7 +45,9 @@ data <- read_csv("Data/data.csv", col_names = T)
 
 ```
 
-### How much of the used dependencies are explicitly declared by the clients?
+# Transitive dependency explosion
+
+## Descriptive statistics of direct and transitive dependencies
 
 ```{r}
 nb_direct_and_transitive_deps <- 
@@ -55,7 +57,6 @@ nb_direct_and_transitive_deps <-
    mutate(percentage = n / sum(n)*100) %>% 
   ungroup() %>% 
   tidyr::complete(Artifact, Type, fill = list(n = 0))
-
 
 # summary statistics of direct and transitive dependencies
 direct_deps <- nb_direct_and_transitive_deps %>% filter(Type == "direct")
@@ -73,9 +74,9 @@ nb_direct_and_transitive_deps$Type <- ifelse(nb_direct_and_transitive_deps$Type 
 # save the data objects
 save(nb_direct_and_transitive_deps, file = "Data/nb_direct_and_transitive_deps.RData")
 load(file = "Data/nb_direct_and_transitive_deps.RData")
-
 ```
 
+## Correlation between direct and transitive dependencies
 
 ```{r}
 direct_n <- nb_direct_and_transitive_deps %>% filter(Type == "Direct") %>% dplyr::rename(Direct = n)
@@ -95,15 +96,11 @@ p <- ggExtra::ggMarginal(p, type = "boxplot")
 
 ggsave(filename = "Figures/nb_direct_and_transitive_deps_boxplot.pdf", plot = p,
        height = 3, width = 7,  units = c("in"), device = "pdf")
-
-
 ```
 
-```{r}
-# ----------------------------------------------------------------------------
-# Violinplot with the distribution of direct and transitive dependencies
-# ----------------------------------------------------------------------------
+## Violinplot with the distribution of direct and transitive dependencies
 
+```{r}
 # plot boxplot the distribution of direct and transitive dependencies
 means <- aggregate(n ~  Type, nb_direct_and_transitive_deps, mean)
 means$n <- round(means$n, 2)
@@ -134,12 +131,17 @@ nb_direct_and_transitive_deps_boxplot <-
 ggsave(filename = "Figures/nb_direct_and_transitive_deps_boxplot.pdf", plot = nb_direct_and_transitive_deps_boxplot,
        height = 3, width = 7,  units = c("in"), device = "pdf")
 
-# ----------------------------------------------------------------------------
-# Geom_area with the distribution of direct and transitive dependencies
-# ----------------------------------------------------------------------------
+```
 
-# Calculate the mean of each group
-# mu <- ddply(nb_direct_and_transitive_deps, "Type", summarise, grp.mean=mean(percent))
+## Geom_area with the distribution of direct and transitive dependencies
+
+```{r}
+
+View(nb_direct_and_transitive_deps)
+
+# case transitive == zero
+nb_direct_and_transitive_deps$percentage <- ifelse(is.na(nb_direct_and_transitive_deps$percentage), 0, nb_direct_and_transitive_deps$percentage)
+
 nb_direct_and_transitive_deps$Artifact <- as.numeric(as.factor(nb_direct_and_transitive_deps$Artifact))
 nb_direct_and_transitive_deps$Artifact <- as.factor(nb_direct_and_transitive_deps$Artifact)
 
@@ -147,30 +149,110 @@ nb_direct_and_transitive_deps_arranged <- nb_direct_and_transitive_deps %>%
   group_by(Artifact, Type) %>% 
   arrange(percentage)
 
+nb_direct_and_transitive_deps_arranged$Artifact <- as.numeric(nb_direct_and_transitive_deps_arranged$Artifact)
+
+nb_direct_and_transitive_deps_arranged_direct <- nb_direct_and_transitive_deps_arranged %>% filter(Type == "Direct")
+nb_direct_and_transitive_deps_arranged_transitive <- nb_direct_and_transitive_deps_arranged %>% filter(Type == "Transitive")
+
+nb_direct_and_transitive_deps_arranged_direct$Artifact <- c(1:10000)
+nb_direct_and_transitive_deps_arranged_transitive$Artifact <- c(10000:1)
+
+nb_direct_and_transitive_deps_arranged <- bind_rows(nb_direct_and_transitive_deps_arranged_direct, nb_direct_and_transitive_deps_arranged_transitive)
+
 nb_direct_and_transitive_deps_area <-
   nb_direct_and_transitive_deps_arranged %>%
   ggplot(aes(
     x = Artifact, 
     y = percentage,
     fill = Type)) +
-  geom_area(alpha = 1, position = "fill") +
+  geom_area(alpha = 0.9, position = "fill") +
   ylab("%Dependencies") +
   scale_x_discrete() +
-  xlab("Libraries") +
+  xlab("Projects") +
   xlim(0, 10000) +
   scale_y_continuous(labels = scales::percent) +
-  scale_fill_viridis(discrete = TRUE) 
+  scale_fill_viridis(discrete = TRUE, begin = 0.5, end = 0.8, option = "plasma", alpha = 0.5) +
+  theme( legend.title = element_blank())
 
 # deps_area_deps_boxplot <- nb_direct_and_transitive_deps_area + nb_direct_and_transitive_deps_boxplot +plot_layout(ncol = 1)
 
 ggsave(filename = "Figures/nb_direct_and_transitive_deps_area.pdf", plot = nb_direct_and_transitive_deps_area,
-       height = 3, width = 7,  units = c("in"), device = "pdf")
+       height = 2.5, width = 7,  units = c("in"), device = "pdf")
 
 ```
 
-### How frequent is the occurrence of bloated dependencies in the Maven ecosystem?
+# How frequent is the occurrence of bloated dependencies in the Maven ecosystem?
 
-Barplot with the Types of Usages
+## Boxplot with the Types of Usages
+
+```{r}
+results_bloat <- results %>% 
+  filter(Scope == "compile" & Optional == F) %>% 
+  mutate(TypeUsage = ifelse(UsedDeclared == T, "UsedDeclared", ifelse(UsedUndeclared == T, "UsedUndeclared", ifelse(BloatedDeclared == T, "BloatedDeclared", "BloatedUndeclared")))) %>% 
+  dplyr::select(Artifact, TypeUsage) %>% 
+   dplyr::group_by(Artifact, TypeUsage) %>%
+  dplyr::summarize(n = n()) %>%
+  ungroup() %>% 
+  tidyr::complete(Artifact, TypeUsage, fill = list(n = 0))
+
+# calculate the means
+means <- aggregate(n ~  TypeUsage, results_bloat, mean)
+means$n <- round(means$n, 2)
+
+filtered_type_bloat_boxplot <- results_bloat %>% 
+  ggplot(aes(TypeUsage, n, fill = TypeUsage)) +
+  geom_boxplot() +
+  geom_point(data = means,
+             aes(x=TypeUsage, y=n),
+             colour="black",
+                shape=18, size=6, show.legend = FALSE)+
+  geom_point(data = means,
+             aes(x=TypeUsage, y=n),
+             colour="lightblue", 
+                shape=18, size=4, show.legend = FALSE)+
+  geom_text(data = means, aes(label = n, y = n + 2)) +
+  scale_y_continuous(breaks=c(0, 1,10,100,1000), trans="log1p") +
+   # scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
+   #            labels = trans_format("log10", math_format(10^.x))) +
+  xlab (NULL) +
+  ylab ("#Dependencies") +
+  # annotation_logticks(sides="l") +
+  scale_fill_viridis(discrete = TRUE) +
+  theme(legend.position = "top", legend.title = element_blank(), text = element_text(size = 16, family = "LM Roman 10"))  +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+# show the summary
+BD <- results_bloat %>% filter(TypeUsage == "BloatedDeclared")
+BU <- results_bloat %>% filter(TypeUsage == "BloatedUndeclared")
+UU <- results_bloat %>% filter(TypeUsage == "UsedUndeclared")
+UD <- results_bloat %>% filter(TypeUsage == "UsedDeclared")
+print("BloatedDeclared")
+summary(BD$n)
+print("BloatedUndeclared")
+summary(BU$n)
+print("UsedUndeclared")
+summary(UU$n)
+print("UsedDeclared")
+summary(UD$n)
+
+ggsave(filename = "Figures/filtered_type_bloat_boxplot.pdf", plot = filtered_type_bloat_boxplot ,
+       height = 4, width = 7,  units = c("in"), device = "pdf")
+
+```
+
+
+
+```{r}
+# projects with all their dependencies declared
+results %>% select(Artifact, AllDeps, Declared) %>% count(Declared)
+
+```
+
+
+
+## Barplot with the Types of Usages
 
 ```{r}
 results_bloat <- results %>% 
@@ -197,8 +279,8 @@ filtered_results_bloat$label <- round(filtered_results_bloat$percentage * 100, 1
  
 filtered_type_bloat_barplot <- filtered_results_bloat %>% 
   ggplot(aes(x = "Compile", y = percentage, fill = TypeUsage, label = paste0(label,"%"))) +
-    geom_bar(stat="identity") +
-    geom_text(size = 5, position = position_stack(vjust = 0.5), family = "LM Roman 10") +
+    geom_bar(stat="identity", position = position_fill(reverse = TRUE)) +
+      geom_text(aes(y = percentage, label = paste0(label,"%")), position = position_stack(reverse = TRUE, vjust = .5), family = "LM Roman 10") +
     scale_fill_viridis(discrete = TRUE) +
     labs(y = "%Dependencies", x = "Scope") +
     scale_y_continuous(labels = scales::percent) +
@@ -206,20 +288,28 @@ filtered_type_bloat_barplot <- filtered_results_bloat %>%
     coord_flip()
 
 ggsave(filename = "Figures/filtered_type_bloat_barplot.pdf", plot = filtered_type_bloat_barplot ,
-       height = 3, width = 7,  units = c("in"), device = "pdf")
+       height = 2.5, width = 7,  units = c("in"), device = "pdf")
 
-
+# Examples of popular libraries with many bloated dependencies
 results_bloat %>% group_by(Artifact, TypeUsage) %>% summarise(n = n()) %>% arrange(desc(n)) %>% 
   filter(Artifact == "org.wso2.carbon:org.wso2.carbon.core:4.4.27")
 
-
 results_bloat %>% group_by(Artifact, TypeUsage) %>% summarise(n = n()) %>% arrange(desc(n)) %>% 
   filter(Artifact == "org.eclipse.che.core:che-core-api-core:6.10.0")
+```
 
+## Set of unique dependencies
+
+```{r}
+
+tmp <- results_bloat %>% distinct(AllDeps, .keep_all= TRUE) %>% filter(Type == "direct") 
+
+table(tmp$TypeUsage)
 
 ```
 
-#### Impact of bloat per community
+
+## Impact of bloat per community
 
 ```{r}
 description %>% count(Organization) %>% arrange(desc(n))
@@ -285,8 +375,9 @@ communities$Community <- factor(communities$Community,levels = c("Google (62)", 
 
 communities_bloat <- communities %>% 
   ggplot(aes(x = Community, y = percentage, fill = TypeUsage, label = paste0(label,"%"))) +
-    geom_bar(stat="identity") +
-    geom_text(size = 4, position = position_stack(vjust = 0.5), family = "LM Roman 10") +
+    geom_bar(stat="identity", position = position_fill(reverse = TRUE)) +
+    geom_text(aes(y = percentage, label = paste0(label,"%")), position = position_stack(reverse = TRUE, vjust = .5), family = "LM Roman 10") +
+    # geom_text(size = 4, position = position_stack(vjust = 0.5), family = "LM Roman 10") +
     scale_fill_viridis(discrete = TRUE) +
     labs(y = "%Dependencies", x = "Communities") +
     scale_y_continuous(labels = scales::percent) +
@@ -298,7 +389,7 @@ ggsave(filename = "Figures/communities_bloat.pdf", plot = communities_bloat ,
                                                           
 ```
 
-#### Distribution of bloated dependencies across dependencies
+## Distribution of bloated dependencies across dependencies
 
 ```{r}
 deps_count_types <- results %>%
@@ -342,9 +433,11 @@ deps_count_types %>% filter(TypeUsage== "BloatedUndeclared" & count_type_usage >
   
 ```
 
-#### Correlation between % of bloated deps and # transitive deps
+## Correlation between % of bloated deps and # transitive deps
 
 ```{r}
+library(ggcorrplot)
+
 #DirectDeps/#TransitiveDeps vs #DeclaredBloated/#UndeclaredBloated
 deps_count_types <- results %>%
   dplyr::filter(Scope == "compile" & Optional == F) %>%
@@ -390,25 +483,42 @@ total_deps <- results %>% group_by(Artifact) %>% summarize(total_deps = n())
 total_types <- results %>% group_by(Artifact, Type) %>% summarize(types = n())
 NbDirectDeps <- total_types %>% 
   filter(Type == "direct") %>%
-  dplyr::select(Artifact, n) %>% 
-  dplyr::rename(NbBloatedDeclared = n)
+  dplyr::select(Artifact, types) %>% 
+  dplyr::rename(NbDirectDeps = types)
 
+NbTransitiveDeps <- total_types %>% 
+  filter(Type == "transitive") %>%
+  dplyr::select(Artifact, types) %>% 
+  dplyr::rename(NbTransitiveDeps = types)
 
-matrix <- inner_join(inner_join(inner_join(inner_join(NbBloatedDeclared, total_deps, by = "Artifact"), NbBloatedUndeclared, by = "Artifact"), PercBloatedDeclared,  by = "Artifact"), PercBloatedUnDeclared, by = "Artifact") %>% select(-Artifact)
+matrix <- inner_join(inner_join(inner_join(inner_join(inner_join(inner_join(NbBloatedDeclared, total_deps, by = "Artifact"), NbBloatedUndeclared, by = "Artifact"), PercBloatedDeclared,  by = "Artifact"), PercBloatedUnDeclared, by = "Artifact"), NbDirectDeps, by = "Artifact"), NbTransitiveDeps, by = "Artifact") %>% select(-c(Artifact, total_deps))
 
-corr <- round(cor(matrix), 1)
+corr <- round(cor(matrix), 4)
 
-library(ggcorrplot)
+# matrix of p values
+p.mat <- cor_pmat(matrix)
+View(as.data.frame(p.mat))
+ggcorrplot(p.mat, hc.order = TRUE,
+    type = "lower", p.mat = p.mat, sig.level = 0.001)
 
 # Add correlation coefficients
 # --------------------------------
 # argument lab = TRUE
-ggcorrplot(corr, hc.order = TRUE, type = "lower",
-   lab = TRUE)
+
+corrplot <- ggcorrplot(corr, hc.order = TRUE, type = "lower", legend.title = "Correlation",
+   lab = TRUE,  p.mat = p.mat) +
+  xlab(NULL) +
+   ylab(NULL) +
+  theme_set(theme_bw() +
+              theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+             theme(text = element_text(size = 16, family = "LM Roman 10")))
+
+ggsave(filename = "Figures/corrplot.pdf", plot = corrplot ,
+       height = 6, width = 6,  units = c("in"), device = "pdf")
 
 ```
 
-#### Number of direct dependencies vs number of bloated dependencies
+## Number of direct dependencies vs number of bloated dependencies
 
 ```{r}
 results_types <- results_bloat %>% 
@@ -434,7 +544,7 @@ ggsave(filename = "Figures/direct_bloated_point.pdf", plot = direct_bloated_poin
        height = 3, width = 7,  units = c("in"), device = "pdf")
 ```
 
-Do the most popular libraries have more dependencies?
+## Do the most popular libraries have more dependencies?
 
 ```{r}
 data_usages <- data %>%
@@ -457,7 +567,6 @@ bloat_popularity <- inner_join(bloat_ratio, data_usages)
 
 library(corrplot)
 M <- cor(bloat_popularity$freq, bloat_popularity$DUsages)
-
 
 lm_eqn <- function(bloat_popularitTotalDeps){
     m <- lm(TotalDeps ~ freq, bloat_popularitTotalDeps);
@@ -503,10 +612,11 @@ ggsave(filename = "Figures/bloat_deps_hex.pdf", plot = bloat_deps_hex,
 bloat_popularity %>% ggplot(aes(x = freq, y = DUsages)) +
   geom_smooth(method='lm', formula=y~x) +
   scale_fill_viridis(discrete = TRUE) +
+  geom_point() +
   # add correlation labels
   # geom_text(x = 0.3, y = 300, label = lm_eqn(bloat_popularity), parse = TRUE) +
   labs(x="%Bloated dependencies", y="#Usages") +
-  scale_x_continuous(labels = scales::percentage) +
+  # scale_x_continuous(labels = scales::percentage) +
   theme(legend.position = "top", text = element_text(size = 16, family = "LM Roman 10"))
 
 # geom_hex chart
@@ -558,16 +668,13 @@ ggsave(filename = "Figures/bloat_treedeep_ridges.pdf", plot = bloat_treedeep_rid
 ```
 
 
+## Bloated dependencies in multi-module projects
 
 ```{r}
-results %>% filter()
-colnames(results)
-```
+results_bloat <- results %>% 
+  mutate(TypeUsage = ifelse(UsedDeclared == T, "UsedDeclared", ifelse(UsedUndeclared == T, "UsedUndeclared", ifelse(BloatedDeclared == T, "BloatedDeclared", "BloatedUndeclared"))))
 
-
-### Bloated dependencies in multi-module projects
-
-```{r}
+# is multi modulue
 description_multimodule <- description %>% dplyr::select(Artifact, IsMultimodule)
 
 # percentage of usage types for the compiled scope
@@ -580,14 +687,45 @@ filtered_results_bloat<- results_bloat %>%
 
 filtered_results_bloat$label <- round(filtered_results_bloat$percentage * 100, 1)
 
-join_multimodule <- inner_join(filtered_results_bloat, description_multimodule, by = "Artifact") 
+join_multimodule <- inner_join(filtered_results_bloat, description_multimodule, by = "Artifact")
 
-join_multimodule %>% 
-  group_by(TypeUsage, IsMultimodule) %>% 
-  summarise(sum(join_multimodule$n))
+means <- aggregate(percentage ~  TypeUsage, join_multimodule, mean)
+means$percentage <- round(means$n, 2)
+nb_direct_and_transitive_deps_boxplot <- 
+  nb_direct_and_transitive_deps %>% 
+  ggplot(aes(Type, n)) +
+  geom_violin(trim = FALSE, aes(fill = Type)) +
+  geom_boxplot(width = 0.1) +
+  scale_y_log10(
+    breaks = scales::trans_breaks("log10", function(x) 10 ^ x),
+    labels = scales::trans_format("log10", scales::math_format(10 ^ .x))
+  ) +
+  geom_point(data = means,
+             aes(x=Type, y=n),
+             colour="black",
+                shape=18, size=6, show.legend = FALSE)+
+  geom_point(data = means,
+             aes(x=Type, y=n),
+             colour="lightblue", 
+                shape=18, size=4, show.legend = FALSE)+
+  geom_text(data = means, aes(label = n, y = n)) 
+
+# boxplot
+dodge <- position_dodge(width = 0.6)
+filtered_results_bloat_multimodule_boxplot <- join_multimodule %>% 
+  ggplot(aes(x = IsMultimodule, y = percentage, fill = TypeUsage)) +
+   geom_violin(position = dodge) +
+  geom_boxplot(width=.05, outlier.colour=NA, position = dodge, color = "black") +
+    # stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+    scale_fill_viridis(discrete = TRUE)  +
+    ylab("%Dependencies") +
+  scale_y_continuous(labels = scales::percent) +
+    theme(legend.position = "top", legend.title = element_blank(), text = element_text(size = 16, family = "LM Roman 10")) 
+
+ggsave(filename = "Figures/filtered_results_bloat_multimodule_boxplot.pdf", plot = filtered_results_bloat_multimodule_boxplot,
+       height = 4, width = 7,  units = c("in"), device = "pdf")
 
 # count the number
-
 join_multimodule_aggregated <- aggregate(join_multimodule$n, by=list(IsMultimodule=join_multimodule$IsMultimodule, TypeUsage=join_multimodule$TypeUsage), FUN=sum)
 
 filtered_results_bloat_multimodule <- join_multimodule_aggregated %>% 
@@ -602,8 +740,6 @@ filtered_results_bloat_multimodule <- join_multimodule_aggregated %>%
     coord_flip()
 
 # count the percentage
-
-
 join_multimodule_aggregated %>% group_by(IsMultimodule, TypeUsage) %>% summarise(x/sum(x))
 
 join_multimodule_aggregated$IsMultimodule <- as.factor(join_multimodule_aggregated$IsMultimodule)
@@ -614,7 +750,7 @@ join_multimodule_aggregated <- join_multimodule_aggregated %>%
   group_by(IsMultimodule, TypeUsage) %>% 
   dplyr::mutate(freq = x / sum(x))
  
-
+# Bar plot
 filtered_results_bloat_multimodule <- join_multimodule_aggregated %>% 
   ggplot(aes(x = IsMultimodule, y = x, fill = TypeUsage)) +
     geom_bar(stat="identity", position = "dodge") +
@@ -631,7 +767,7 @@ ggsave(filename = "Figures/filtered_results_bloat_multimodule.pdf", plot = filte
 ```
 
 
-### Rotten bloated dependencies
+## Rotten bloated dependencies
 
 ```{r}
 results %>% filter(AllDeps == "org.eclipse.core:filesystem:test")
@@ -722,34 +858,113 @@ ggsave(filename = "Figures/accumulo_versions_list_results_plot.pdf", plot = accu
   
 ```
 
-
-
-
-### How much dependency conflicts are due to bloated dependencies?
+# To what extend dependency conflicts are superflous due to bloated dependencies?
 
 ```{r}
-dependency_status <- results %>% 
-  dplyr::filter(Scope == "compile" & Optional == F) %>%
-  mutate(TypeUsage = ifelse(UsedDeclared == T, "UsedDeclared", ifelse(UsedUndeclared == T, "UsedUndeclared", ifelse(BloatedDeclared == T, "BloatedDeclared", "BloatedUndeclared")))) %>%  
-  dplyr::select(Artifact, InConflict, TypeUsage) %>% 
-  group_by(Artifact, InConflict, TypeUsage) %>% 
-  summarise(n = n()) 
+dependency_status <- results %>%
+  filter(Scope == "compile") %>% 
+  mutate(TypeUsage = ifelse(
+    UsedDeclared == T,
+    "UsedDeclared",
+    ifelse(
+      UsedUndeclared == T,
+      "UsedUndeclared",
+      ifelse(BloatedDeclared == T, "BloatedDeclared", "BloatedUndeclared")
+    )
+  )) %>%
+  dplyr::select(Artifact, InConflict, TypeUsage) %>%
+  group_by(Artifact, InConflict, TypeUsage) %>%
+  summarise(n = n()) %>% 
+  group_by(InConflict, TypeUsage) %>%
+  summarise(sum = sum(n))
 
-dependency_status$InConflict <- ifelse(dependency_status$InConflict == "NO", "Other", ifelse(dependency_status$InConflict == "Ommited for duplicate", "Ommited for duplicate", "In conflict"))
-  
-dependency_status_barplot <- dependency_status %>% ggplot(aes(x = InConflict, y = n, fill=TypeUsage)) +
+dependency_status$InConflict <-
+  factor(
+    dependency_status$InConflict,
+    levels = c('In conflict', 'Omitted for duplicate', 'Omitted for cycle', 'Not in conflict'),
+    ordered = TRUE
+  )
+
+dependency_status
+
+dependency_status_barplot <-
+  dependency_status %>% 
+  filter(InConflict !=  'Omitted for cycle') %>% 
+  ggplot(aes(x = InConflict, y = sum, fill=TypeUsage)) +
   geom_bar(stat="identity", position=position_dodge()) +
-  xlab("Dependency Status") +
+  geom_text(aes(label=sum), position=position_dodge(width=0.9), vjust=-0.25, size = 3.5, family = "LM Roman 10") +
+  xlab(NULL) +
   ylab("#Dependencies") +
+  scale_y_continuous(labels = comma) +
+   coord_cartesian(ylim = c(0, 210000)) +
   scale_fill_viridis(discrete = TRUE) +
-  theme(legend.position = "top", legend.title = element_blank(), text = element_text(size = 16, family = "LM Roman 10")) +
+  theme(legend.position = "top", legend.title = element_blank(), text = element_text(size = 16, family = "LM Roman 10"))
 
 ggsave(filename = "Figures/dependency_status_barplot.pdf", plot = dependency_status_barplot,
        height = 3, width = 7,  units = c("in"), device = "pdf") 
 
 ```
 
-### Comparison between the height of the original vs debloated dependency tree
+## Distribution of dependencies in conflict/duplicated/cycle or NO
+
+```{r}
+deps_in_conflict <- results %>%
+  filter(InConflict !=  'Omitted for cycle' & Scope == "compile") %>% 
+  mutate(TypeUsage = ifelse(
+    UsedDeclared == T,
+    "UsedDeclared",
+    ifelse(
+      UsedUndeclared == T,
+      "UsedUndeclared",
+      ifelse(BloatedDeclared == T, "BloatedDeclared", "BloatedUndeclared")
+    )
+  )) %>%
+  group_by(Artifact, InConflict, TypeUsage) %>%
+  summarise(n = n())
+
+deps_in_conflict$InConflict <-
+  factor(
+    deps_in_conflict$InConflict,
+    levels = c('In conflict', 'Omitted for duplicate', 'Not in conflict'),
+    ordered = TRUE
+  )
+
+deps_in_conflict_debloated <- deps_in_conflict %>% filter(TypeUsage != "BloatedDeclared" & TypeUsage != "BloatedUndeclared")
+ 
+dodge <- position_dodge(width = 0.6)
+dist_deps_in_conflict_bloat_debl <- deps_in_conflict %>% 
+  mutate(BloatStatus = ifelse(TypeUsage == "BloatedDeclared" | TypeUsage == "BloatedUndeclared", "Bloated", "Debloated")) %>% 
+  ggplot(aes(x = InConflict, y = n, fill = BloatStatus)) +
+  geom_violin(width = 0.77, position = dodge) +
+  geom_boxplot(width = .05, color = "black", position = dodge) +
+  # stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
+  scale_y_log10(
+    breaks = scales::trans_breaks("log10", function(x)
+      10 ^ x),
+    labels = scales::trans_format("log10", scales::math_format(10 ^ .x))
+  ) +
+  ylab("#Dependencies") +
+  xlab(NULL) +
+  scale_fill_viridis(discrete = TRUE, option = "magma", begin = 0.6, end = 0.9) +
+  theme(legend.title = element_blank()) 
+
+
+ggsave(filename = "Figures/dist_deps_in_conflict_bloat_debl.pdf", plot = dist_deps_in_conflict_bloat_debl,
+       height = 4, width = 7,  units = c("in"), device = "pdf") 
+
+bloated <- deps_in_conflict %>% 
+  mutate(BloatStatus = ifelse(TypeUsage == "BloatedDeclared" | TypeUsage == "BloatedUndeclared", "Bloated", "Debloated")) %>% 
+  filter(InConflict == "In conflict" & BloatStatus == "Bloated")
+summary(bloated$n)
+
+not_bloated <- deps_in_conflict %>% 
+  mutate(BloatStatus = ifelse(TypeUsage == "BloatedDeclared" | TypeUsage == "BloatedUndeclared", "Bloated", "Debloated")) %>% 
+  filter(InConflict == "In conflict" & BloatStatus == "Debloated")
+summary(not_bloated$n)
+```
+
+
+## Comparison between the height of the original vs debloated dependency tree
 
 ```{r}
 description$HeightOriginalDT <-  as.numeric(description$HeightOriginalDT)
@@ -814,8 +1029,6 @@ data %>%
 ```
 
 
-
-
 ```{r}
 # data preparation library(ggplot2)
 col <- c("red", "pink", "orange", "brown")
@@ -852,7 +1065,7 @@ colour.df %>% ggplot(aes(fill = col, ymax = ymax, ymin = ymin, xmax = 100, xmin 
     
 ```
 
-### Plot conflicts
+## Plot conflicts
 
 ```{r}
 results <-
@@ -875,3 +1088,6 @@ results %>% filter(UsageType == "UsedUndeclared" | UsageType == "BloatedUndeclar
 ggsave(filename = "Figures/usage-conflicts.pdf", height = 4, width = 6,  units = c("in"), device = cairo_pdf)
 
 ```
+
+
+# How much can developers benefit from removing their direct bloated dependencies?
