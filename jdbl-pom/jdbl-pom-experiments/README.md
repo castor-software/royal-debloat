@@ -1,10 +1,10 @@
-# JDbl-pom-experiments: Automatic collection and analysis of dependency usages between Maven artifacts
+# `jdbl-pom-experiments`: Automatic collection and analysis of dependency usages between Maven artifacts
 
-### What is JDbl-pom-experiments?
+### What is `jdbl-pom-experiments`?
 
 Given a list of coordinates (GAVs) of Maven artifacts, `jdbl-pom-experiments` allows to download their `.pom` and  `.jar` from the Maven Central repository and resolve all their dependencies to a customized local repository in order to collect information about bloated dependencies, i.e. dependencies that are in the classpath of the project but are not used.
 
-### How does JDbl-pom-experiments?
+### How does `jdbl-pom-experiments` works?
 
 `jdbl-pom-experiments` relies on the `maven-dependency` set of tools and plugins to resolve dependencies and validate the project. It extends the `maven-dependency-analyzer` plugin in order to analyze dependency usages at the bytecode level. By doing this, it takes into account both direct and transitive dependencies, as well as projects that belong to multi-module project. 
 
