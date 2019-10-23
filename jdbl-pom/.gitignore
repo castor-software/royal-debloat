@@ -10,3 +10,17 @@ target/
 
 ### Project
 #spoon*
+
+
+
+
+*.html
+*.RData
+*.Rhistory
+*.Rproj
+*.csv
+*.txt
+.Rproj.user
+Data
+
+

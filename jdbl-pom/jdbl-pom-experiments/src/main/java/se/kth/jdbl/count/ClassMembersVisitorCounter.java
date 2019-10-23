@@ -1,4 +1,4 @@
-package se.kth.jdbl.counter;
+package se.kth.jdbl.count;
 
 public class ClassMembersVisitorCounter {
 
