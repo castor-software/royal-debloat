@@ -17,7 +17,7 @@ import se.kth.jdbl.analysis.ProjectDependencyAnalysis;
 import se.kth.jdbl.analysis.ProjectDependencyAnalyzer;
 import se.kth.jdbl.analysis.ProjectDependencyAnalyzerException;
 import se.kth.jdbl.analysis.asm.DependencyClassFileVisitor;
-import se.kth.jdbl.counter.ClassMembersVisitorCounter;
+import se.kth.jdbl.count.ClassMembersVisitorCounter;
 import se.kth.jdbl.tree.StandardTextVisitor;
 import se.kth.jdbl.tree.analysis.DependencyTreeAnalyzer;
 import se.kth.jdbl.util.*;
@@ -106,6 +106,11 @@ public class App extends PlexusTestCase {
                 String groupId = split[0];
                 String artifactId = split[1];
                 String version = split[2];
+
+                BufferedWriter bwLastProcessed = new BufferedWriter(new FileWriter(resultsDir + "lastProcessed.txt"));
+                bwLastProcessed.write(artifact);
+                bwLastProcessed.close();
+
                 try {
                     app.execute(groupId, artifactId, version, resultsDir, artifactDir, dependenciesDir);
                 } catch (Exception e) {
@@ -271,7 +276,7 @@ public class App extends PlexusTestCase {
                 // used and declared dependencies"
                 Set<Artifact> usedDeclaredDependencies = actualAnalysis.getUsedDeclaredArtifacts();
 
-                // used but not undeclared dependencies
+                // used but not declared dependencies
                 Set<Artifact> usedUndeclaredDependencies = actualAnalysis.getUsedUndeclaredArtifacts();
 
                 // manipulation of the pom file
@@ -351,8 +356,7 @@ public class App extends PlexusTestCase {
 
                     List<Dependency> declaredDeps = pomModel.getDependencies();
                     for (Dependency declaredDep : declaredDeps) {
-                        if (declaredDep.getGroupId().equals(g) &&
-                                declaredDep.getArtifactId().equals(a)) {
+                        if (declaredDep.getGroupId().equals(g) && declaredDep.getArtifactId().equals(a)) {
                             isDeclared = true;
                             break;
                         }

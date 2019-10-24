@@ -22,7 +22,7 @@ package se.kth.jdbl.analysis.asm;
 import org.codehaus.plexus.component.annotations.Component;
 import se.kth.jdbl.analysis.ClassFileVisitorUtils;
 import se.kth.jdbl.analysis.DependencyAnalyzer;
-import se.kth.jdbl.counter.ClassMembersVisitorCounter;
+import se.kth.jdbl.count.ClassMembersVisitorCounter;
 
 import java.io.IOException;
 import java.net.URL;

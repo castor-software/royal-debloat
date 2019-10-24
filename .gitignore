@@ -32,3 +32,4 @@ hs_err_pid*
 experiments/dummy-project/src/main/resources/
 jdbl-tracer-maven-plugin/src/main/resources/for_test_only/
 
+.Rproj.user

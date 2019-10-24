@@ -78,78 +78,92 @@
                     </archive>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <version>3.0.0-M3</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>integration-test</goal>
-                            <goal>verify</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <argLine>-Xbootclasspath/p:${project.build.directory}/${project.build.finalName}.jar
-                        -javaagent:${project.build.directory}/${project.build.finalName}.jar
-                    </argLine>
-                    <!--<argLine>-Xbootclasspath/p:${project.build.directory}/jdbl-agent-1.0-SNAPSHOT-jar-with-dependencies.jar-->
-                    <!-- -javaagent:${project.build.directory}/jdbl-agent-1.0-SNAPSHOT-jar-with-dependencies.jar-->
-                    <!--</argLine>-->
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.1</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <relocations>
-                                <relocation>
-                                    <pattern>org.objectweb.asm</pattern>
-                                    <!--<shadedPattern>se.kth.jdbl.imported.org.objectweb.asm</shadedPattern>-->
-                                    <shadedPattern>org.objectweb.asm</shadedPattern>
-                                </relocation>
-                            </relocations>
-                            <minimizeJar>false</minimizeJar>
-                            <!--<createSourcesJar>true</createSourcesJar>-->
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
 
     <!-- List of dependencies-->
     <dependencies>
+
+        <!-- Maven -->
+        <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-invoker</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
+        <!-- Utils-->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.9</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.6</version>
+        </dependency>
+
+        <!-- Bytecode manipulation -->
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
             <version>7.0</version>
         </dependency>
-
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-util</artifactId>
             <version>7.0</version>
         </dependency>
+
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>2.12.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>2.12.0</version>
+        </dependency>
+
+        <!-- CLI interface -->
+        <dependency>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>1.72</version>
+        </dependency>
+
+        <!-- JaCoCo -->
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>org.jacoco.core</artifactId>
+            <version>0.8.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>org.jacoco.build</artifactId>
+            <version>0.8.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>org.jacoco.report</artifactId>
+            <version>0.8.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>0.8.4</version>
+        </dependency>
+
+
+        <!-- Test -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.0</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 </project>
