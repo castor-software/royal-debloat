@@ -1,5 +1,4 @@
-# Dependency Usages in the Maven Ecosystem
-
+# Large-scale Experiments on Bloated Dependencies
 ### What is `jdbl-pom-experiments`?
 
 Given a list of coordinates (GAVs) of Maven artifacts, `jdbl-pom-experiments` allows to download their `.pom` and  `.jar` from the Maven Central repository and resolve all their dependencies to a customized local repository in order to collect information about bloated dependencies, i.e. dependencies that are in the classpath of the project but are not used.
