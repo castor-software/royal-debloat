@@ -2,12 +2,13 @@
 
 This repo contains software debloating tools invented at KTH Royal Institute of Technology. Every tool is organized in a separate folder in this repo, with a detailed README file inside.
 
-## JDbl (pom)
+## `jdbl-pom`
 
-A tool to seek at the root of software bloat: declared but unused dependencies. It automatically detects and removes all the unused dependencies in the `pom.xml` file of Maven projects. This tool relies on static analysis and do not transform any part of the application. It can be integrated directly in Maven projects as a plugin.
+A set of tools to perform dependency analysis of Java projects that build with Maven. Specifically, it focuses on automatically detecting and removing bloated dependencies, i.e. dependencies that are entirely added to the project's dependency tree, yet no single method of its API is actually being used.
 
 
-## JDbl (tracer)
+
+## `jdbl-tracer`
 
 A tool for automatically specializing Java applications through dynamic debloat. It removes unused classes and methods from Maven projects (including its dependencies) by tracing the application execution at runtime and modifying the bytecode on the fly during the Maven building process. It can be used directly as a Maven plugin or executed out-of-the-box as a standalone debloat application.
 
