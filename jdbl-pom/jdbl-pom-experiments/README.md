@@ -1,4 +1,4 @@
-# `jdbl-pom-experiments`: Automatic collection and analysis of dependency usages between Maven artifacts
+# Dependency Usages in the Maven Ecosystem
 
 ### What is `jdbl-pom-experiments`?
 
