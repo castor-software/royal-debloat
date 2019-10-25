@@ -1,0 +1,172 @@
+---
+title: "projects"
+output: html_notebook
+---
+
+Import required data and libraries
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# clear the R environment
+rm(list=ls())
+
+library(tidyverse)
+library(latex2exp)
+library(scales)
+library(extrafont)
+library(viridis)
+library(ggridges)
+library(forcats)
+library(ggExtra)
+library(grid)
+library(gtable)
+# set fonts
+loadfonts(device = "pdf")
+# font_import()
+# link www.fontsquirrel.com/fonts/latin-modern-roman  
+
+# execute once to add fonts:
+# font_import(pattern = "lmroman*")
+# theme(legend.position = "top", text=element_text(size=14, family="LM Roman 10"))
+
+# set ggplot global theme
+theme_set(theme_bw() +
+            theme(legend.position = "top") +
+            theme(text = element_text(size = 16, family = "LM Roman 10")))
+
+# multiple figures together
+if(!require(devtools)) install.packages("devtools")
+devtools::install_github("thomasp85/patchwork")
+library(patchwork)
+
+```
+
+# 
+
+```{r}
+Project <- c("pdfbox-tools", "pdfbox-tools")
+Type <- c("Original", "Debloated")
+Size <- c(9.8, 4.7)  
+pdfbox_tools <- data.frame(Project, Type, Size)
+
+Project <- c("deeplearning4j-graph", "deeplearning4j-graph")
+Type <- c("Original", "Debloated")
+Size <- c(480, 16.6)  
+deeplearning4j_graph <- data.frame(Project, Type, Size)
+
+# number of classes
+# Original: 33867
+# Debloated: 8219
+
+
+Project <- c("jitsi-videobridge", "jitsi-videobridge")
+Type <- c("Original", "Debloated")
+Size <- c(44.1, 18.9)  
+jitsi_videobridge <- data.frame(Project, Type, Size)
+
+# number of classes
+# Original: 
+# Debloated: 21148
+
+
+Project <- c("repairnator-realtime", "repairnator-realtime")
+Type <- c("Original", "Debloated")
+Size <- c(23.8, 21.8)  
+repairnator_realtime <- data.frame(Project, Type, Size)
+
+Project <- c("webmagic-core", "webmagic-core")
+Type <- c("Original", "Debloated")
+Size <- c(4.3, 3.5)  
+webmagic_core <- data.frame(Project, Type, Size)
+
+df <-
+  bind_rows(
+    pdfbox_tools,
+    deeplearning4j_graph,
+    jitsi_videobridge,
+    repairnator_realtime,
+    webmagic_core
+  )
+
+# add colum with the total
+tmp <- df %>% 
+  group_by(Project) %>% 
+  summarise(Total = sum(Size))
+df <- inner_join(df, tmp, by = "Project")
+
+# add colum with the difference
+a <- df %>% filter(Type == "Original") 
+b <- df %>% filter(Type == "Debloated")
+Diff <- a$Size - b$Size
+Project <- a$Project
+c <- data.frame(Project, Diff)
+df <- inner_join(df, c, by = "Project")
+
+# add colum with the percentage of reduction
+df <- df %>% filter(Type == "Original") %>% mutate(Perc = 100 - round(((Total-Size) *100)/Size, 2))
+
+# ----------------------------------------------------------------------------
+# barplot of Jar sizes
+# ----------------------------------------------------------------------------
+reduction_barplot <- df %>% 
+  ggplot(aes(x = Project, y = Perc)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_text(aes(label = paste(Perc, "%")),
+            position = position_dodge(width = 0.9),
+            vjust = -0.3,
+            family = "LM Roman 10") +
+  scale_y_continuous(labels=function(x) paste0(x,"%"), limits = c(0, 100)) +
+  labs(x = NULL, y = NULL) +
+  scale_fill_viridis(discrete = TRUE, option = "D", direction = -1) +
+  theme(legend.title = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggsave(filename = "Figures/reduction_barplot.pef", plot = reduction_barplot,
+       height = 4, width = 7,  units = c("in"), device = "pdf")
+
+```
+
+
+```{r}
+Application <- c("PDFBox", "PDFBox", "PDFBox", "Checkstyle", "Checkstyle", "Checkstyle")
+Tool <- c("Proguard", "JDbl_TB", "JDbl_EP", "Proguard", "JDbl_TB", "JDbl_EP")
+
+Classes <- c(100 - round((1167* 100)/2983, 2), 100 - round((301* 100)/2983, 2),  100 - round((201* 100)/2983, 2),
+             100 - round((2795* 100)/6236, 2), 100 - round((635* 100)/6236, 2),  100 - round((675* 100)/6236, 2)
+             )
+Methods <- c(100 - round((6841* 100)/22099, 2), 100 - round((3623* 100)/22099, 2),  100 - round((2623* 100)/22099, 2),
+             100 - round((22947* 100)/56048, 2), 100 - round((7464* 100)/56048, 2),  100 - round((8932* 100)/56048, 2)
+             )
+Size <- c(100 - round((7.71* 100)/10.62, 2), 100 - round((6.5* 100)/10.62, 2), 100 - round((6.48* 100)/10.62, 2),
+          100 - round((6.00* 100)/11.54, 2), 100 - round((2.80* 100)/11.54, 2),  100 - round((2.18* 100)/11.54, 2)
+          )
+
+df <- data.frame(Application, Tool, Size, Classes)
+df$Tool <- factor(df$Tool , levels = c("Proguard", "JDbl_TB", "JDbl_EP"))
+
+# ----------------------------------------------------------------------------
+# barplot of Jar sizes
+# ----------------------------------------------------------------------------
+jar_size_barplot <- df %>% ggplot(aes(x = Application, y = Size, fill = Tool)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_text(aes(label = paste(Size, "%")),
+            position = position_dodge(width = 0.9),
+            vjust = -0.3,
+            family = "LM Roman 10") +
+  scale_y_continuous(labels=function(x) paste0(x,"%"), limits = c(0, 100)) +
+  labs(x = NULL, y = NULL) +
+  scale_fill_viridis(discrete = TRUE, option = "D", direction = -1) +
+  theme(legend.title = element_blank())
+
+ggsave(filename = "Figures/jar_size_barplot.pdf", plot = jar_size_barplot,
+       height = 3, width = 7,  units = c("in"), device = "pdf")
+
+
+
+```
+
+
+
+
+
+
+
+

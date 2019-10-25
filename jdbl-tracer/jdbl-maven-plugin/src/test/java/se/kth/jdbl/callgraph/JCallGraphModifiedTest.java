@@ -14,7 +14,7 @@ public class JCallGraphModifiedTest {
     @Before
     public void setUp() throws Exception {
         jCallGraphModified = new JCallGraphModified();
-        classPath = "/home/cesarsv/Documents/papers/2019_papers/royal-debloat/jdbl-parent/jdbl-maven-plugin/experiments/dummy-project/target/classes";
+        classPath = "/home/cesarsv/Documents/papers/2019_papers/royal-debloat/jdbl-tracer/jdbl-maven-plugin/experiments/dummy-project/target/classes";
     }
 
     @Test
