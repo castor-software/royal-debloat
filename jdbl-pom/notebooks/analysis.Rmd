@@ -76,6 +76,12 @@ save(nb_direct_and_transitive_deps, file = "Data/nb_direct_and_transitive_deps.R
 load(file = "Data/nb_direct_and_transitive_deps.RData")
 ```
 
+## Ratio of bloat vs ratio of direct/transitive
+
+```{r}
+
+```
+
 ## Correlation between direct and transitive dependencies
 
 ```{r}
@@ -159,6 +165,7 @@ nb_direct_and_transitive_deps_arranged_transitive$Artifact <- c(10000:1)
 
 nb_direct_and_transitive_deps_arranged <- bind_rows(nb_direct_and_transitive_deps_arranged_direct, nb_direct_and_transitive_deps_arranged_transitive)
 
+my3cols <- c("#E7B800", "#2E9FDF")
 nb_direct_and_transitive_deps_area <-
   nb_direct_and_transitive_deps_arranged %>%
   ggplot(aes(
@@ -171,7 +178,7 @@ nb_direct_and_transitive_deps_area <-
   xlab("Projects") +
   xlim(0, 10000) +
   scale_y_continuous(labels = scales::percent) +
-  scale_fill_viridis(discrete = TRUE, begin = 0.5, end = 0.8, option = "plasma", alpha = 0.5) +
+  scale_fill_manual(values = my3cols) +
   theme( legend.title = element_blank())
 
 # deps_area_deps_boxplot <- nb_direct_and_transitive_deps_area + nb_direct_and_transitive_deps_boxplot +plot_layout(ncol = 1)
@@ -242,15 +249,82 @@ ggsave(filename = "Figures/filtered_type_bloat_boxplot.pdf", plot = filtered_typ
 
 ```
 
-
+## Count of projects with all their dependencies declared
 
 ```{r}
-# projects with all their dependencies declared
-results %>% select(Artifact, AllDeps, Declared) %>% count(Declared)
+library(stringr)
 
+a <- results %>% 
+  filter(Scope == "compile" & Optional == F) %>% 
+  select(Artifact, AllDeps, Declared, Used) %>%
+  group_by(Artifact, Declared, Used) %>% 
+  summarise(count = n()) %>% 
+  ungroup() %>% 
+  tidyr::complete(Artifact, Declared, Used, fill = list(count = 0))
+
+b <- results %>% 
+  filter(Scope == "compile" & Optional == F) %>% 
+  select(Artifact, AllDeps) %>% 
+  group_by(Artifact) %>% 
+  summarise(total = n()) 
+
+inner_join(a, b, by= "Artifact") %>% 
+  filter(Declared == TRUE & Used == TRUE & count == total)
+  
+# dependencies that are always used and declared
+a <- results %>% 
+  filter(Scope == "compile" & Optional == F) %>% 
+  select(Artifact, AllDeps, Declared, Used) %>% 
+  filter(Declared == TRUE & Used == TRUE) %>% 
+  select(AllDeps) %>% 
+  distinct()
+
+
+a <- a %>% 
+  separate(AllDeps, c("GroupID", "ArtifactId", "Version"), ":") %>% 
+  mutate(Lib = paste(GroupID, ArtifactId, sep = ":")) %>% 
+  select(Lib) %>% 
+  distinct()
+
+b <- results %>% 
+  filter(Scope == "compile" & Optional == F) %>% 
+  select(Artifact, AllDeps, Declared, Used) %>% 
+  filter(Declared != TRUE | Used != TRUE) %>% 
+  select(AllDeps) %>% 
+  distinct()
+
+b <- b %>% 
+  separate(AllDeps, c("GroupID", "ArtifactId", "Version"), ":") %>% 
+  mutate(Lib = paste(GroupID, ArtifactId, sep = ":")) %>% 
+  select(Lib) %>% 
+  distinct()
+
+c <- setdiff(a, b)
+
+x <- results %>% 
+  filter(Scope == "compile" & Optional == F) %>% 
+  select(AllDeps) %>% 
+  separate(AllDeps, c("GroupID", "ArtifactId", "Version"), ":") %>% 
+  mutate(Lib = paste(GroupID, ArtifactId, sep = ":")) %>% 
+  group_by(Lib) %>% 
+  summarise(n = n())
+
+View(inner_join(x,c, by= "Lib") %>% 
+  arrange(desc(n)))
+
+
+
+
+results %>% 
+  filter(Scope == "compile" & Optional == F) %>% 
+  select(AllDeps, Declared, Used) %>% 
+  group_by(AllDeps, Declared, Used) %>% 
+  summarise(count=n()) %>% 
+  ungroup() %>% 
+  tidyr::complete(AllDeps, Declared, Used, fill = list(count = 0))
+  
+  
 ```
-
-
 
 ## Barplot with the Types of Usages
 
@@ -542,6 +616,166 @@ direct_bloated_point <- join %>% filter(TypeUsage == "Bloated") %>%
  
 ggsave(filename = "Figures/direct_bloated_point.pdf", plot = direct_bloated_point ,
        height = 3, width = 7,  units = c("in"), device = "pdf")
+```
+
+## Correlation between library popularity and bloated dependencies
+
+```{r}
+data_usages <- data %>%
+  dplyr::mutate(Artifact = paste(paste(GroupId, ArtifactId, sep = ":"), Version, sep = ":")) %>%
+  dplyr::select(Artifact, DUsages)
+
+results_bloat <- results %>%
+  filter(Scope == "compile", Optional == FALSE) %>%
+  mutate(TypeUsage = ifelse(
+    UsedDeclared == TRUE,
+    "UsedDeclared",
+    ifelse(
+      UsedUndeclared == TRUE,
+      "UsedUndeclared",
+      ifelse(
+        BloatedDeclared == TRUE,
+        "BloatedDeclared",
+        "BloatedUndeclared"
+      )
+    )
+  )) %>%
+  dplyr::count(Artifact, TypeUsage) %>% 
+  ungroup() %>% 
+  tidyr::complete(Artifact, TypeUsage, fill = list(n = 0))
+
+join <- inner_join(data_usages, results_bloat, by = "Artifact")
+
+join %>%
+  ggplot(aes(x = DUsages, y = n)) +
+  # geom_point() +
+  stat_density_2d(aes(fill = stat(nlevel)), geom = "polygon") +
+  scale_y_log10(
+    breaks = scales::trans_breaks("log10", function(x)
+      10 ^ x),
+    labels = scales::trans_format("log10", scales::math_format(10 ^ .x))
+  ) +
+  scale_x_log10(
+    breaks = scales::trans_breaks("log10", function(x)
+      10 ^ x),
+    labels = scales::trans_format("log10", scales::math_format(10 ^ .x))
+  ) +
+  facet_grid(TypeUsage ~ .) +
+  scale_fill_viridis() +
+  theme(legend.position = "right") 
+
+#  --------------------- frequency
+results_bloat <- results %>%
+  filter(Scope == "compile", Optional == FALSE) %>%
+  mutate(TypeUsage = ifelse(
+    UsedDeclared == TRUE,
+    "UsedDeclared",
+    ifelse(
+      UsedUndeclared == TRUE,
+      "UsedUndeclared",
+      ifelse(
+        BloatedDeclared == TRUE,
+        "BloatedDeclared",
+        "BloatedUndeclared"
+      )
+    )
+  )) %>%
+  dplyr::count(Artifact, TypeUsage) %>% 
+  ungroup() %>% 
+  tidyr::complete(Artifact, TypeUsage, fill = list(n = 0)) %>% 
+  dplyr::group_by(Artifact) %>% 
+  dplyr::mutate(TotalDeps= sum(n)) %>% 
+   dplyr::mutate(freq = n / TotalDeps)
+
+
+join <- inner_join(data_usages, results_bloat , by = "Artifact")
+join %>%
+  filter(TypeUsage == "BloatedDeclared" | TypeUsage == "BloatedUndeclared") %>% 
+  ggplot(aes(x = freq, y = DUsages)) +
+  #  scale_y_log10(
+  #   breaks = scales::trans_breaks("log10", function(x)
+  #     10 ^ x),
+  #   labels = scales::trans_format("log10", scales::math_format(10 ^ .x))
+  # ) +
+  # scale_x_log10(
+  #   breaks = scales::trans_breaks("log10", function(x)
+  #     10 ^ x),
+  #   labels = scales::trans_format("log10", scales::math_format(10 ^ .x))
+  # ) +
+  xlab("#Dependencies") +
+  ylab("#Usages") +
+  geom_point(alpha = 0.1) +
+  facet_grid(. ~ TypeUsage)
+
+
+
+
+results_bloat <- results %>%
+  filter(Scope == "compile", Optional == FALSE) %>%
+  mutate(IsBloated = ifelse(
+    UsedDeclared == TRUE,
+    FALSE,
+    ifelse(
+      UsedUndeclared == TRUE,
+      FALSE,
+      ifelse(
+        BloatedDeclared == TRUE,
+        TRUE,
+        TRUE
+      )
+    )
+  )) %>%
+  dplyr::count(Artifact, IsBloated) %>% 
+  ungroup() %>% 
+  tidyr::complete(Artifact, IsBloated, fill = list(n = 0)) %>% 
+  dplyr::group_by(Artifact) %>% 
+  dplyr::mutate(TotalDeps= sum(n)) %>% 
+   dplyr::mutate(PercBloat = n / TotalDeps)
+
+perc_bloat <- results_bloat %>% 
+  filter(IsBloated == TRUE) %>% 
+  select(Artifact, PercBloat)
+
+nb_direct_and_transitive_deps <- 
+  results %>%
+  filter(Scope == "compile", Optional == FALSE) %>%
+  dplyr::group_by(Artifact, Type) %>%
+  dplyr::summarize(n = n()) %>%
+   mutate(PercType = n / sum(n)*100) %>% 
+  ungroup() %>% 
+  tidyr::complete(Artifact, Type, fill = list(n = 0)) %>% 
+  select(Artifact, Type, PercType)
+
+
+direct_bloated <- inner_join(perc_bloat, nb_direct_and_transitive_deps, by = "Artifact") %>% 
+   mutate(PercType = PercType/100) %>% 
+  filter(Type == "direct") %>% 
+  ggplot(aes(x = PercType, y=PercBloat)) +
+  geom_point(alpha = 0.1, color = "#E7B800") +
+  geom_density_2d(color = "black") +
+  xlab("%Direct Dependencies") +
+  ylab("%Bloated Dependencies") +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  theme(legend.position = "none")
+
+transitive_bloated <- inner_join(perc_bloat, nb_direct_and_transitive_deps, by = "Artifact") %>% 
+   mutate(PercType = PercType/100) %>% 
+  filter(Type == "transitive") %>% 
+  ggplot(aes(x = PercType, y=PercBloat)) +
+  geom_point(alpha = 0.1, color = "#2E9FDF") +
+  geom_density_2d(color = "black") +
+  xlab("%Transitive dependencies") +
+  ylab("%Bloated dependencies") +
+  scale_x_continuous(labels = scales::percent, limits=c(0, 1)) +
+  scale_y_continuous(labels = scales::percent) +
+  theme(legend.position = "none")
+
+dt_bloated_percentage <- direct_bloated + transitive_bloated
+
+ggsave(filename = "Figures/transitive_bloated.pdf", plot = transitive_bloated,
+       height = 4, width = 7,  units = c("in"), device = "pdf")
+
 ```
 
 ## Do the most popular libraries have more dependencies?
@@ -933,17 +1167,20 @@ deps_in_conflict_debloated <- deps_in_conflict %>% filter(TypeUsage != "BloatedD
  
 dodge <- position_dodge(width = 0.6)
 dist_deps_in_conflict_bloat_debl <- deps_in_conflict %>% 
+  
+  filter(InConflict == "In conflict") %>% 
   mutate(BloatStatus = ifelse(TypeUsage == "BloatedDeclared" | TypeUsage == "BloatedUndeclared", "Bloated", "Debloated")) %>% 
   ggplot(aes(x = InConflict, y = n, fill = BloatStatus)) +
   geom_violin(width = 0.77, position = dodge) +
   geom_boxplot(width = .05, color = "black", position = dodge) +
   # stat_summary(fun.y=mean, geom="point", shape=23, size=2) +
-  scale_y_log10(
-    breaks = scales::trans_breaks("log10", function(x)
-      10 ^ x),
-    labels = scales::trans_format("log10", scales::math_format(10 ^ .x))
-  ) +
-  ylab("#Dependencies") +
+  # scale_y_log10(
+  #   breaks = scales::trans_breaks("log10", function(x)
+  #     10 ^ x),
+  #   labels = scales::trans_format("log10", scales::math_format(10 ^ .x))
+  # ) +
+  scale_y_continuous(breaks=c(0, 1,10,100,1000), trans="log1p") +
+  ylab("#Dependencies (log)") +
   xlab(NULL) +
   scale_fill_viridis(discrete = TRUE, option = "magma", begin = 0.6, end = 0.9) +
   theme(legend.title = element_blank()) 
@@ -1091,3 +1328,9 @@ ggsave(filename = "Figures/usage-conflicts.pdf", height = 4, width = 6,  units =
 
 
 # How much can developers benefit from removing their direct bloated dependencies?
+
+```{r}
+results %>% 
+  select(Artifact, AllDeps, )
+```
+
