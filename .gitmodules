@@ -1,0 +1,3 @@
+[submodule "depclean"]
+	path = depclean
+	url = https://github.com/castor-software/depclean

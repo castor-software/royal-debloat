@@ -64,7 +64,7 @@ Size <- c(44.1, 18.9)
 jitsi_videobridge <- data.frame(Project, Type, Size)
 
 # number of classes
-# Original: 
+# Original: 23443
 # Debloated: 21148
 
 
@@ -109,7 +109,7 @@ df <- df %>% filter(Type == "Original") %>% mutate(Perc = 100 - round(((Total-Si
 # ----------------------------------------------------------------------------
 reduction_barplot <- df %>% 
   ggplot(aes(x = Project, y = Perc)) +
-  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "#00a67c") +
   geom_text(aes(label = paste(Perc, "%")),
             position = position_dodge(width = 0.9),
             vjust = -0.3,
@@ -119,7 +119,7 @@ reduction_barplot <- df %>%
   scale_fill_viridis(discrete = TRUE, option = "D", direction = -1) +
   theme(legend.title = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave(filename = "Figures/reduction_barplot.pef", plot = reduction_barplot,
+ggsave(filename = "Figures/reduction_barplot.pdf", plot = reduction_barplot,
        height = 4, width = 7,  units = c("in"), device = "pdf")
 
 ```

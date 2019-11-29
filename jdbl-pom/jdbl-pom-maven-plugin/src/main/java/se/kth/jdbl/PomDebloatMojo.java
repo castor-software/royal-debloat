@@ -99,7 +99,7 @@ public class PomDebloatMojo extends AbstractMojo {
 
         String packaging = project.getPackaging();
         if (packaging.equals("pom")) {
-            getLog().info("Skipping because packaging type " + packaging + ".");
+            getLog().info("Skipping because packaging type is " + packaging + ".");
             return;
         }
 
@@ -148,7 +148,6 @@ public class PomDebloatMojo extends AbstractMojo {
         unusedUndeclaredArtifacts.removeAll(usedUndeclaredArtifacts);
         unusedUndeclaredArtifacts.removeAll(unusedDeclaredArtifacts);
 
-        /* TODO consider only dependencies with compile scope */
 
         System.out.println("**************************************************");
         System.out.println("****************** RESULTS");
@@ -216,7 +215,7 @@ public class PomDebloatMojo extends AbstractMojo {
             throw new MojoExecutionException(e.getMessage(), e);
         }
 
-        /* TODO check the debloat results w.r.t the test suite */
+        /* TODO check the debloat results w.r.t the test suite automatically */
 
         /* write the debloated pom file */
         try {

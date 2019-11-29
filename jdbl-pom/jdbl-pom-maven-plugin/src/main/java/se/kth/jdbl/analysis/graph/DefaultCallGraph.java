@@ -45,11 +45,11 @@ public class DefaultCallGraph {
         return allReferencedClassMembers;
     }
 
-    public static Set<String> getProjectVertices() {
+    public static Set<String> projectVertices() {
         return projectVertices;
     }
 
-    public static Set<String> getVertices() {
+    public static Set<String> vertices() {
         return directedGraph.vertexSet();
     }
 
