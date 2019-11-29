@@ -1,3 +1,6 @@
 [submodule "depclean"]
 	path = depclean
 	url = https://github.com/castor-software/depclean
+[submodule "depclean-experiments"]
+	path = depclean-experiments
+	url = https://github.com/castor-software/depclean-experiments
