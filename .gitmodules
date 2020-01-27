@@ -4,3 +4,9 @@
 [submodule "depclean-experiments"]
 	path = depclean-experiments
 	url = https://github.com/castor-software/depclean-experiments
+[submodule "jdbl"]
+	path = jdbl
+	url = https://github.com/castor-software/jdbl
+[submodule "jdbl-experiments"]
+	path = jdbl-experiments
+	url = https://github.com/castor-software/jdbl-experiments
